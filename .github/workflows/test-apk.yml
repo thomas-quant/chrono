@@ -1,16 +1,20 @@
-name: Test APK (debug, sideload)
+name: Test APK (sideload)
 
 # Manual one-click build for on-device testing.
-# Produces an unsigned-with-debug-key dev-flavor APK (applicationId
-# com.vicolo.chrono.dev, "Chrono Dev") that installs alongside a real Chrono.
-# Needs NO signing secrets, so it works on a fork. Trigger from the Actions tab
-# ("Run workflow") or: gh workflow run test-apk.yml --ref <branch>
+# Builds the RELEASE dev-flavor APK (R8 path — the debug/D8 path crashes while
+# dexing some third-party AARs, e.g. tsbackgroundfetch / androidx.lifecycle),
+# signed with an EPHEMERAL keystore generated in-workflow so it needs NO org
+# signing secrets and works on a fork. Output is installable & representative of
+# production (minified). applicationId com.vicolo.chrono.dev ("Chrono Dev"),
+# installs alongside a real Chrono.
+# Trigger from the Actions tab ("Run workflow") or:
+#   gh workflow run test-apk.yml --ref <branch> --repo <owner>/chrono
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    name: Analyze + Test + Debug APK
+    name: Analyze + Test + Release APK (ephemeral key)
     runs-on: ubuntu-latest
 
     steps:
@@ -31,9 +35,7 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
-      # Generates lib/l10n -> AppLocalizations (incl. the new alarmsResetNotice
-      # getter). pub get usually triggers this, but run it explicitly so analyze
-      # below sees the generated getter.
+      # Generates lib/l10n -> AppLocalizations (incl. the new alarmsResetNotice getter).
       - name: Generate localizations
         run: flutter gen-l10n
 
@@ -54,19 +56,29 @@ jobs:
             lib/main.dart \
             lib/app.dart
 
-      # Informational: runs the new storage tests (and the rest of the suite).
-      # continue-on-error so a red test never blocks producing a testable APK.
+      # Informational: runs the storage tests (and the rest of the suite).
       - name: Test (informational)
         continue-on-error: true
         run: flutter test
 
-      # The real deliverable: a debug-signed dev APK, no secrets required.
-      - name: Build debug dev APK
-        run: flutter build apk --debug --flavor dev
+      # Throwaway signing material so a RELEASE build works without org secrets.
+      # build.gradle reads android/key.properties (if present) + android/app/release-key.jks.
+      - name: Generate ephemeral keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore android/app/release-key.jks \
+            -storepass androidtest -keypass androidtest \
+            -alias chronotest -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=Chrono Test, OU=Dev, O=Test, L=Test, ST=Test, C=US"
+          printf 'keyAlias=chronotest\nkeyPassword=androidtest\nstorePassword=androidtest\n' > android/key.properties
+
+      # Universal release APK (single file, R8 path — avoids the debug/D8 dexing crash).
+      - name: Build release dev APK
+        run: flutter build apk --release --flavor dev
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: chrono-dev-debug-apk
+          name: chrono-dev-release-apk
           path: build/app/outputs/flutter-apk/*.apk
           retention-days: 7
