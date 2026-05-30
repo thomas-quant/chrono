@@ -255,14 +255,29 @@ class SettingGroup extends SettingItem {
   }
 
   Future<void> load() async {
-    String value;
+    // Null-safe load (STOR-02 / D-03 / D-05): never throw on a null/empty/
+    // invalid stored value. Recover to schema defaults (already in place) and
+    // log. The legacy GetStorage dual-store fallback is KEPT (D-05) — only made
+    // null-safe; no fallback removal and no migration this phase.
+    String? value;
     try {
       value = loadTextFileSync(id);
     } catch (e) {
-      logger.e("Error loading $id: $e");
-      value = GetStorage().read(id);
+      logger.e("Error loading $id from file, trying GetStorage fallback: $e");
+      value = GetStorage().read(id); // may be null — DO NOT decode unguarded
     }
-    loadValueFromJson(json.decode(value));
+
+    if (value == null || value.isEmpty) {
+      logger.e("No stored value for setting group '$id' — using defaults");
+      return; // schema defaults already in place
+    }
+
+    try {
+      loadValueFromJson(json.decode(value));
+    } catch (e) {
+      logger.e("Invalid JSON for setting group '$id' — using defaults: $e");
+      // defaults already in place; never rethrow
+    }
 
     // print("################################## ${valueToJson()}");
   }
