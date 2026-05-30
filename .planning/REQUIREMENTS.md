@@ -92,13 +92,43 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be populated by roadmapper) | — | Pending |
+| BOOT-01 | Phase 1 | Pending |
+| BOOT-02 | Phase 1 | Pending |
+| BOOT-03 | Phase 1 | Pending |
+| BOOT-04 | Phase 1 | Pending |
+| STOR-01 | Phase 1 | Pending |
+| STOR-02 | Phase 1 | Pending |
+| SNZ-01 | Phase 2 | Pending |
+| SNZ-02 | Phase 2 | Pending |
+| SNZ-03 | Phase 2 | Pending |
+| SNZ-04 | Phase 2 | Pending |
+| SNZ-05 | Phase 2 | Pending |
+| DATE-01 | Phase 3 | Pending |
+| DATE-02 | Phase 3 | Pending |
+| VOL-01 | Phase 3 | Pending |
+| FAB-01 | Phase 3 | Pending |
+| PR-01 | Phase 3 | Pending |
+| PR-02 | Phase 3 | Pending |
+| BUILD-01 | Phase 4 | Pending |
+| BUILD-02 | Phase 4 | Pending |
+| SCAN-01 | Phase 4 | Pending |
+| SCAN-02 | Phase 4 | Pending |
+| SCAN-03 | Phase 4 | Pending |
+| SCAN-04 | Phase 4 | Pending |
+| SCAN-05 | Phase 4 | Pending |
+| SCAN-06 | Phase 4 | Pending |
+| SCAN-07 | Phase 4 | Pending |
+| SCAN-08 | Phase 4 | Pending |
+| SCAN-09 | Phase 4 | Pending |
+| SCAN-10 | Phase 4 | Pending |
+| SCAN-11 | Phase 4 | Pending |
+| SCAN-12 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 31 total (BOOT 4, STOR 2, SNZ 5, DATE 2, VOL 1, FAB 1, SCAN 12, BUILD 2, PR 2)
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 31 ⚠️ (resolved at roadmap step)
+- Mapped to phases: 31 ✓ (Phase 1: 6, Phase 2: 5, Phase 3: 6, Phase 4: 14)
+- Unmapped: 0 ✓ (every v1 requirement maps to exactly one phase; no orphans, no duplicates)
 
 ---
 *Requirements defined: 2026-05-30*
-*Last updated: 2026-05-30 after initial definition*
+*Last updated: 2026-05-30 after roadmap traceability mapping*
