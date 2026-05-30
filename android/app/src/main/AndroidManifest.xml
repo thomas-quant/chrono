@@ -132,9 +132,17 @@
       android:permission="android.permission.RECEIVE_BOOT_COMPLETED"
       android:directBootAware="true"
       >
+      <!-- LOCKED_BOOT_COMPLETED intentionally NOT registered here (BOOT-02 /
+           D-07 defense-in-depth): Chrono's handleBoot() reschedule path must
+           not fire pre-unlock at the OS level, since it touches credential-
+           encrypted storage. The Dart isDeviceLocked() guard in
+           handle_boot.dart is the primary, mandatory protection (some OEMs
+           deliver BOOT_COMPLETED itself before full unlock); this narrowing is
+           belt-and-suspenders. The aamp RebootBroadcastReceiver above keeps
+           LOCKED_BOOT_COMPLETED — it re-arms from its own store and is left
+           untouched. -->
       <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED" />
-        <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
         <action android:name="android.intent.action.QUICKBOOT_POWERON" />
         <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
         <category android:name="android.intent.category.DEFAULT" />
