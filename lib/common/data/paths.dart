@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
@@ -23,6 +24,14 @@ String getAppDataDirectoryPathSync() {
         "App data directory path is not initialized. Call 'initializeAppDataDirectory()' first.");
   }
   return _appDataDirectoryPath;
+}
+
+/// Test-only hook to point the storage layer at a real on-disk directory
+/// without invoking the platform-only `getApplicationDocumentsDirectory()`.
+/// Pass an empty string to reset between tests. Not used in production code.
+@visibleForTesting
+void setAppDataDirectoryPathForTesting(String path) {
+  _appDataDirectoryPath = path;
 }
 
 Future<String> getAppDataDirectoryPath() async {

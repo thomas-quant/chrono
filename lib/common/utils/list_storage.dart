@@ -81,12 +81,16 @@ Future<void> initTextFile(String key, String value) async {
 
 Future<void> saveTextFile(String key, String content) async {
   await queue.add(() async {
+    // Atomic write (STOR-01 / D-02): write the full content to a sibling temp
+    // file in the SAME directory (same filesystem) then rename it over the
+    // target. rename() is POSIX-atomic on a single filesystem, so a process
+    // killed mid-write can never leave a half-written file — the previous good
+    // file survives until the new one is fully written and renamed into place.
     String appDataDirectory = getAppDataDirectoryPathSync();
-    File file = File(path.join(appDataDirectory, '$key.txt'));
-    if (!file.existsSync()) {
-      file.createSync();
-    }
-    await file.writeAsString(content, mode: FileMode.writeOnly);
+    File target = File(path.join(appDataDirectory, '$key.txt'));
+    File tmp = File(path.join(appDataDirectory, '$key.txt.tmp'));
+    await tmp.writeAsString(content, flush: true);
+    await tmp.rename(target.path);
   });
 }
 
@@ -94,14 +98,18 @@ Future<String> saveRingtone(String id, Uint8List data) async {
   String ringtonesDirectory = getRingtonesDirectoryPathSync();
   String newPath = path.join(ringtonesDirectory, id);
 
-  File file = File(newPath);
-
   await queue.add(() async {
-    if (!file.existsSync()) {
-      file.createSync(recursive: true);
+    // Atomic write (STOR-01 / D-02): same temp-write + rename as saveTextFile,
+    // using a '.tmp' sibling in the ringtones directory (same filesystem).
+    // Ensure the ringtones directory exists (preserves prior createSync
+    // behavior so a missing dir doesn't make the write throw).
+    Directory ringtonesDir = Directory(ringtonesDirectory);
+    if (!ringtonesDir.existsSync()) {
+      ringtonesDir.createSync(recursive: true);
     }
-
-    await file.writeAsBytes(data, mode: FileMode.writeOnly);
+    File tmp = File('$newPath.tmp');
+    await tmp.writeAsBytes(data, flush: true);
+    await tmp.rename(newPath);
   });
 
   return newPath;
