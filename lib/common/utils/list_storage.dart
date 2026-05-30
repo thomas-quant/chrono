@@ -56,7 +56,16 @@ List<T> loadListSync<T extends JsonSerializable>(String key) {
 }
 
 Future<List<T>> loadList<T extends JsonSerializable>(String key) async {
-  return listFromString<T>(await loadTextFile(key));
+  // Mirror loadListSync (:49) — never propagate a load error. listFromString
+  // no longer rethrows for data errors (per-entry salvage), but the
+  // factory-missing dev throw and any I/O throw from loadTextFile must still
+  // degrade to [] consistently with the sync sibling. (BOOT-04 / D-04)
+  try {
+    return listFromString<T>(await loadTextFile(key));
+  } catch (e) {
+    logger.e("Error loading list ($key): $e");
+    return [];
+  }
 }
 
 Future<void> saveList<T extends JsonSerializable>(
