@@ -1,5 +1,6 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:clock_app/alarm/screens/alarm_notification_screen.dart';
+import 'package:clock_app/common/logic/salvage_report.dart';
 import 'package:clock_app/navigation/data/route_observer.dart';
 import 'package:clock_app/navigation/screens/nav_scaffold.dart';
 import 'package:clock_app/navigation/types/routes.dart';
@@ -88,6 +89,56 @@ class _AppState extends State<App> {
         .getSetting('useBackgroundService');
 
     setAnimationSpeed(_animationSpeedSetting.value);
+
+    // D-06 / BOOT-04: after the first frame (so the ScaffoldMessenger and the
+    // localizations are mounted), show a one-time notice IF and ONLY IF boot
+    // recovery actually dropped or reset one or more alarms. Routine recovery
+    // (settings defaulted, salvaged non-alarm data, slow init) leaves this flag
+    // false and stays silent (Pitfall 5). No state-management library — this is
+    // a post-frame callback reading the module-level SalvageReport flag.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showAlarmsResetNoticeIfNeeded();
+    });
+  }
+
+  /// Shows a single, dismissible, screen-reader-reachable, localized SnackBar
+  /// when [SalvageReport.alarmsWereLost] is set, then clears the flag so it is
+  /// shown exactly once. Gated to the normal (post-onboarding) route — never on
+  /// the onboarding screen — and a no-op until the messenger is mounted.
+  void _showAlarmsResetNoticeIfNeeded() {
+    if (!SalvageReport.alarmsWereLost) return;
+
+    // Onboarding route shows OnBoardingScreen (see onGenerateRoute); the notice
+    // must only surface on the normal app route, mirroring that same check.
+    final bool onboarded = GetStorage().read('onboarded') != null;
+    if (!onboarded) return;
+
+    final messengerState = _messangerKey.currentState;
+    final messengerContext = _messangerKey.currentContext;
+    if (messengerState == null || messengerContext == null) return;
+
+    final localizations = AppLocalizations.of(messengerContext);
+    if (localizations == null) return;
+    final String message = localizations.alarmsResetNotice;
+
+    messengerState.showSnackBar(
+      SnackBar(
+        content: Semantics(
+          liveRegion: true,
+          label: message,
+          child: Text(message),
+        ),
+        // Long-lived so a screen-reader user has time to hear it; the default
+        // swipe-to-dismiss makes the notice dismissible without a hardcoded
+        // (and otherwise untranslated) action label.
+        duration: const Duration(seconds: 10),
+        dismissDirection: DismissDirection.horizontal,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    // Shown once — clear the flag so a later launch does not repeat it.
+    SalvageReport.clear();
   }
 
   void setAnimationSpeed(dynamic speed) {
