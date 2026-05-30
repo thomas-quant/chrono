@@ -21,15 +21,15 @@ expected: With a Flutter build (after `flutter gen-l10n`): corrupting `Clock/ala
 result: [pending]
 
 ### 3. Toolchain gate — build, analyze, test (all requirements)
-expected: On Flutter 3.22.2 / Dart 3.4+: `flutter gen-l10n` generates the `AppLocalizations.alarmsResetNotice` getter; `flutter analyze lib/` exits 0 (no new issues in the changed files); `flutter test test/common/utils/list_storage_test.dart test/common/utils/json_serialize_test.dart` exits 0. (Test files were authored during execution but NOT run — the Flutter/Dart toolchain is absent in the build environment.)
-result: [pending]
+expected: On Flutter 3.22.2 / Dart 3.4+: `flutter gen-l10n` generates the `AppLocalizations.alarmsResetNotice` getter; `flutter analyze lib/` exits 0 (no new issues in the changed files); `flutter test test/common/utils/list_storage_test.dart test/common/utils/json_serialize_test.dart` exits 0. (Test files were authored during execution but NOT run locally — the Flutter/Dart toolchain is absent in the dev environment.)
+result: PASSED via GitHub Actions (fork thomas-quant/chrono, run 26689658169, 2026-05-30). `flutter gen-l10n` ✓, `flutter analyze` (Phase-1 changed files) ✓, `flutter test` ✓ (standalone Tests workflow also green), `flutter build apk --release --flavor dev` ✓ → installable APK artifact `chrono-dev-release-apk`. Note: the debug/D8 build path crashes dexing third-party AARs (tsbackgroundfetch / androidx.lifecycle 2.8.5); the release/R8 build (what ships) is clean.
 
 ## Summary
 
 total: 3
-passed: 0
+passed: 1
 issues: 0
-pending: 3
+pending: 2
 skipped: 0
 blocked: 0
 
