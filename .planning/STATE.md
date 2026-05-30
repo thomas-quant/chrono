@@ -24,12 +24,12 @@ progress:
 ## Current Position
 
 Phase: 1 (Storage & Boot Reliability) — EXECUTING
-Plan: 1 of 3 complete; next 2 of 3
+Plan: 1 of 3 complete; 2 of 3 PAUSED at blocking on-device checkpoint
 
 - **Phase:** 1 of 4 — Storage & Boot Reliability
-- **Plan:** 1 of 3 complete (01-01 Storage Hardening) — next 01-02
-- **Status:** Executing Phase 1
-- **Progress:** [███░░░░░░░] 33% (1/3 plans in Phase 1)
+- **Plan:** 01-02 (boot guard / time-box / idempotent reschedule) — autonomous tasks 1-2 complete & committed; Task 3 is a blocking `checkpoint:human-verify` (on-device reboot-before-unlock on a secure-lock FBE device) awaiting human verification
+- **Status:** Executing Phase 1 — Plan 02 paused at checkpoint
+- **Progress:** [███░░░░░░░] 33% (1/3 plans complete; 01-02 code done, pending on-device sign-off)
 
 ## Phase Map
 
@@ -61,6 +61,10 @@ Plan: 1 of 3 complete; next 2 of 3
 - **Merge community PRs #467 (rising volume) and #466 (FAB)** rather than reimplement — credit contributors, less duplicate work.
 - **DST recurring-alarm recompute (#359) deferred** to its own milestone (v2).
 - **[01-01] Storage hardened Tier-1, no rewrite (D-01)** — atomic temp+rename writes (`saveTextFile`/`saveRingtone`), per-entry list salvage (one bad alarm no longer loses the whole list; unparseable list → `[]`), null-safe `SettingGroup.load()` keeping the GetStorage fallback. New `SalvageReport` module-level Alarm-loss flag (set only on Alarm loss) feeds the Plan 03 one-time notice.
+- **[01-02] Unlock detection = mechanism B (probe-and-catch), not native (D-07/Q2)** — the boot isolate runs without a MainActivity/FlutterEngine, so a MainActivity-scoped MethodChannel is unreachable there; `isDeviceLocked()` instead probes `getApplicationDocumentsDirectory()` and treats any throw as "locked, defer." No `MainActivity.kt` change. API-gated no-op < API 24.
+- **[01-02] Manifest narrowed minimally (Q1)** — dropped `LOCKED_BOOT_COMPLETED` from Chrono's `BootBroadcastReceiver` (belt-and-suspenders; Dart guard is primary); aamp `RebootBroadcastReceiver` + `MainActivity` directBootAware left untouched.
+- **[01-02] Splash time-box = 8s on the storage+reschedule segment only (D-06)** — `runApp(App())` always reached; `Future.wait(initializeData)` left outside the timeout.
+- **[01-02] `updateAlarms`/`updateTimers` confirmed idempotent and preserved unchanged as the D-08 spine (A4/BOOT-03)** — cancel-by-stable-id then schedule; re-running boot-then-launch re-arms exactly once.
 
 ### Open decisions to resolve during planning
 
@@ -90,10 +94,10 @@ Plan: 1 of 3 complete; next 2 of 3
 
 ## Session Continuity
 
-- **Last action:** Executed Phase 1 Plan 01 (Storage Hardening). 3 tasks committed atomically (`a257829` atomic writes, `32960c7` per-entry salvage + SalvageReport flag, `9edb4bf` null-safe load). STOR-01/STOR-02/BOOT-04 delivered at source level. Tests authored but not run (toolchain absent).
-- **Next action:** Execute Phase 1 Plan 02 (boot guard / time-boxed splash / idempotent reschedule), which builds on the now-non-throwing loads.
-- **Watch:** Run `flutter test test/common/utils/` + `flutter analyze` to confirm Plan 01 GREEN. Phase 1 still has the Direct-Boot / `flutter_boot_receiver` plumbing question for Plan 02.
+- **Last action:** Executed Phase 1 Plan 02 (boot guard / time-boxed splash / idempotent reschedule). Autonomous Tasks 1-2 committed atomically (`284f1f6` defer-until-unlock guard + isDeviceLocked() + try/catch fix + manifest narrowing, `f247448` time-boxed main() init). Task 3 is a blocking on-device `checkpoint:human-verify` — returned to the orchestrator, NOT self-approved. BOOT-01/02/03 delivered at source level. Mechanism B chosen (boot-isolate reachability); 8s time-box; funnel idempotency confirmed.
+- **Next action:** Human runs the Task 3 on-device verification (secure-lock FBE device, API 24+): `flutter build apk --debug --flavor dev`, create alarms+timer, `adb reboot`, check logcat pre-unlock for the `deferring` log + absence of `IllegalStateException`, unlock → normal UI + exactly-once re-arm. On "approved", proceed to Plan 03 (alarms-lost notice).
+- **Watch:** Run `flutter analyze lib/system/logic/device_lock.dart lib/system/logic/handle_boot.dart lib/main.dart` to confirm Plan 02 GREEN (toolchain absent here). Also still owe Plan 01 `flutter test`/`flutter analyze`.
 
 ---
 *State initialized: 2026-05-30*
-*Last updated: 2026-05-30 after executing 01-01-PLAN.md*
+*Last updated: 2026-05-30 after executing 01-02-PLAN.md (Tasks 1-2; Task 3 checkpoint pending)*
