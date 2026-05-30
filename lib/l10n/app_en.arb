@@ -775,5 +775,9 @@
   "arabicNumeral": "Arabic",
   "showDigitalClock": "Show digital clock",
   "backgroundServiceIntervalSetting": "Background service interval",
-  "backgroundServiceIntervalSettingDescription": "Lower interval will help keep the app alive, at the cost of some battery life"
+  "backgroundServiceIntervalSettingDescription": "Lower interval will help keep the app alive, at the cost of some battery life",
+  "alarmsResetNotice": "Some alarms could not be restored and were reset. Please check your alarms.",
+  "@alarmsResetNotice": {
+    "description": "Shown once after boot recovery when one or more alarms were dropped or reset."
+  }
 }
