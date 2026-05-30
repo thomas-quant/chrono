@@ -42,7 +42,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Harden the text storage path: atomic temp-write+rename, per-entry salvage, null-safe SettingGroup.load, alarm-loss flag (STOR-01/02, BOOT-04)
+- [x] 01-01-PLAN.md — Harden the text storage path: atomic temp-write+rename, per-entry salvage, null-safe SettingGroup.load, alarm-loss flag (STOR-01/02, BOOT-04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -98,7 +98,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Storage & Boot Reliability | 0/3 | Planned | - |
+| 1. Storage & Boot Reliability | 1/3 | In Progress|  |
 | 2. Snooze Reliability | 0/0 | Not started | - |
 | 3. Date, Volume & FAB High-Value Fixes | 0/0 | Not started | - |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |

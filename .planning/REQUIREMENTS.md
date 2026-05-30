@@ -12,9 +12,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **BOOT-01**: App launches to its normal UI (never a permanent black/splash hang) even after a reboot, a killed boot write, or partial/corrupted stored state
 - [ ] **BOOT-02**: Boot-time code does not access credential-encrypted storage before the user has unlocked the device (no `IllegalStateException` crash on `LOCKED_BOOT_COMPLETED`)
 - [ ] **BOOT-03**: Alarms/timers are correctly rescheduled after reboot once the device is unlocked, idempotently (no duplicates, no missed reschedules)
-- [ ] **BOOT-04**: A corrupted or unreadable settings/list file recovers to a safe default and is logged, instead of crashing or hanging the app
-- [ ] **STOR-01**: List/settings writes are atomic (temp-write + rename) so an interrupted write cannot leave a half-written file
-- [ ] **STOR-02**: Storage reads guard against null/invalid JSON before decoding (no unguarded `json.decode`)
+- [x] **BOOT-04**: A corrupted or unreadable settings/list file recovers to a safe default and is logged, instead of crashing or hanging the app
+- [x] **STOR-01**: List/settings writes are atomic (temp-write + rename) so an interrupted write cannot leave a half-written file
+- [x] **STOR-02**: Storage reads guard against null/invalid JSON before decoding (no unguarded `json.decode`)
 
 ### Reliability — Snooze (CRITICAL)
 
@@ -95,9 +95,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOOT-01 | Phase 1 | Pending |
 | BOOT-02 | Phase 1 | Pending |
 | BOOT-03 | Phase 1 | Pending |
-| BOOT-04 | Phase 1 | Pending |
-| STOR-01 | Phase 1 | Pending |
-| STOR-02 | Phase 1 | Pending |
+| BOOT-04 | Phase 1 | Complete |
+| STOR-01 | Phase 1 | Complete |
+| STOR-02 | Phase 1 | Complete |
 | SNZ-01 | Phase 2 | Pending |
 | SNZ-02 | Phase 2 | Pending |
 | SNZ-03 | Phase 2 | Pending |
