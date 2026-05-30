@@ -21,7 +21,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 ## Phases
 
-- [ ] **Phase 1: Storage & Boot Reliability** - Kill the boot black-screen / splash-hang epic with non-fatal loads, atomic writes, an idempotent reschedule primitive, and an unlock-guarded boot path
+- [ ] **Phase 1: Storage & Boot Reliability** - Kill the boot black-screen / splash-hang epic with non-fatal loads, atomic writes, an idempotent reschedule primitive, and an unlock-guarded boot path (all 3 plans code-complete 2026-05-30; Plans 02 & 03 paused at blocking on-device checkpoints — phase not closeable until both are human-verified)
 - [ ] **Phase 2: Snooze Reliability** - Make snooze reliably re-ring, honor fractional lengths, enforce max-count across the isolate boundary, and stop one-shot alarms re-firing after snooze→dismiss
 - [ ] **Phase 3: Date, Volume & FAB High-Value Fixes** - Fix specific-date off-by-one, make the rising-volume ramp stop cleanly, and free list items from FAB overlap (merging community PRs #467 and #466)
 - [ ] **Phase 4: QR/Barcode Scan-to-Dismiss Task** - Ship a registered-code scan-to-dismiss alarm task on an F-Droid-clean scanner, with a default-on escape hatch, after de-risking the lock-screen camera
@@ -46,8 +46,8 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [x] 01-02-PLAN.md — Defer-until-unlock boot guard, time-boxed splash, idempotent reschedule funnel + on-device reboot verify (BOOT-01/02/03)
-- [ ] 01-03-PLAN.md — One-time localized, screen-reader-reachable "alarms were reset" notice gated on actual alarm loss (BOOT-04, STOR-02)
+- [~] 01-02-PLAN.md — Defer-until-unlock boot guard, time-boxed splash, idempotent reschedule funnel (BOOT-01/02/03) — autonomous tasks done & committed; Task 3 blocking on-device reboot-before-unlock checkpoint PENDING
+- [~] 01-03-PLAN.md — One-time localized, screen-reader-reachable "alarms were reset" notice gated on actual alarm loss (BOOT-04, STOR-02) — autonomous tasks done & committed; Task 3 blocking on-device repro + TalkBack checkpoint PENDING
 
 ### Phase 2: Snooze Reliability
 
@@ -98,7 +98,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Storage & Boot Reliability | 2/3 | In Progress|  |
+| 1. Storage & Boot Reliability | 1/3 done; 2 code-complete | In progress (02 & 03 on-device checkpoints pending) | - |
 | 2. Snooze Reliability | 0/0 | Not started | - |
 | 3. Date, Volume & FAB High-Value Fixes | 0/0 | Not started | - |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |

@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-05-30T15:50:09.093Z"
+status: paused
+last_updated: "2026-05-30T16:06:10.779Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
   completed_plans: 1
-  percent: 0
+  percent: 8
 ---
 
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
@@ -24,18 +24,18 @@ progress:
 ## Current Position
 
 Phase: 1 (Storage & Boot Reliability) — EXECUTING
-Plan: 1 of 3 complete; 2 of 3 PAUSED at blocking on-device checkpoint
+Plan: 1 of 3 fully complete; Plans 02 AND 03 each have their autonomous tasks done & committed but are PAUSED at a blocking on-device `checkpoint:human-verify`
 
 - **Phase:** 1 of 4 — Storage & Boot Reliability
-- **Plan:** 01-02 (boot guard / time-box / idempotent reschedule) — autonomous tasks 1-2 complete & committed; Task 3 is a blocking `checkpoint:human-verify` (on-device reboot-before-unlock on a secure-lock FBE device) awaiting human verification
-- **Status:** Executing Phase 1 — Plan 02 paused at checkpoint
-- **Progress:** [███░░░░░░░] 33% (1/3 plans complete; 01-02 code done, pending on-device sign-off)
+- **Plan:** 01-03 (alarms-lost one-time notice) — autonomous Tasks 1-2 complete & committed (`d7f9de2` ARB string, `98d028b` app.dart notice); Task 3 is a blocking `checkpoint:human-verify` (on-device corrupt-alarm-file repro + TalkBack + negative routine-recovery case) returned to the orchestrator, NOT self-approved. Plan 01-02's Task 3 (on-device reboot-before-unlock) is also still pending human verification.
+- **Status:** Executing Phase 1 — Plans 02 and 03 paused at their blocking on-device checkpoints
+- **Progress:** [█░░░░░░░░░] ~8% (1 of 3 Phase-1 plans fully done; 02 + 03 code-complete, pending on-device sign-off)
 
 ## Phase Map
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | Storage & Boot Reliability | BOOT-01..04, STOR-01..02 (6) | In progress (1/3 plans) |
+| 1 | Storage & Boot Reliability | BOOT-01..04, STOR-01..02 (6) | In progress (1/3 plans done; 02 + 03 code-complete, on-device checkpoints pending) |
 | 2 | Snooze Reliability | SNZ-01..05 (5) | Not started |
 | 3 | Date, Volume & FAB High-Value Fixes | DATE-01..02, VOL-01, FAB-01, PR-01..02 (6) | Not started |
 | 4 | QR/Barcode Scan-to-Dismiss Task | BUILD-01..02, SCAN-01..12 (14) | Not started |
@@ -43,8 +43,8 @@ Plan: 1 of 3 complete; 2 of 3 PAUSED at blocking on-device checkpoint
 ## Performance Metrics
 
 - **Phases complete:** 0/4
-- **Requirements delivered:** 3/31 (STOR-01, STOR-02, BOOT-04)
-- **Plans executed:** 1 (01-01 Storage Hardening, ~5 min, 3 tasks, 7 files)
+- **Requirements delivered (source-level):** 3/31 (STOR-01, STOR-02, BOOT-04 — BOOT-04/STOR-02 now have both their detection (01-01) and user-facing notice (01-03); BOOT-01/02/03 source-complete in 01-02 pending on-device sign-off)
+- **Plans fully complete:** 1 (01-01 Storage Hardening, ~5 min, 3 tasks, 7 files); **code-complete but checkpoint-pending:** 2 (01-02, 01-03)
 - **Milestone started:** 2026-05-30
 
 ## Accumulated Context
@@ -65,6 +65,8 @@ Plan: 1 of 3 complete; 2 of 3 PAUSED at blocking on-device checkpoint
 - **[01-02] Manifest narrowed minimally (Q1)** — dropped `LOCKED_BOOT_COMPLETED` from Chrono's `BootBroadcastReceiver` (belt-and-suspenders; Dart guard is primary); aamp `RebootBroadcastReceiver` + `MainActivity` directBootAware left untouched.
 - **[01-02] Splash time-box = 8s on the storage+reschedule segment only (D-06)** — `runApp(App())` always reached; `Future.wait(initializeData)` left outside the timeout.
 - **[01-02] `updateAlarms`/`updateTimers` confirmed idempotent and preserved unchanged as the D-08 spine (A4/BOOT-03)** — cancel-by-stable-id then schedule; re-running boot-then-launch re-arms exactly once.
+- **[01-03] One-time alarms-lost notice = post-frame callback + module-level `SalvageReport` flag, no state-mgmt lib (D-06/D-01)** — `_AppState.initState` registers `WidgetsBinding.addPostFrameCallback` → shows a `Semantics(liveRegion)`-wrapped, localized (`alarmsResetNotice`) `SnackBar` via the existing `_messangerKey` ScaffoldMessenger only when `SalvageReport.alarmsWereLost` AND on the post-onboarding route, then `SalvageReport.clear()` (shows exactly once). Routine recovery stays silent (Pitfall 5).
+- **[01-03] Notice dismiss = swipe-to-dismiss, not a SnackBarAction button** — no generic "OK"/"Dismiss" ARB key exists; rather than ship an untranslated label or misuse `dismissAlarmButton` (alarm-specific), used `DismissDirection.horizontal` on a 10s floating SnackBar (long enough for TalkBack). Adds zero surplus ARB key; English-only `alarmsResetNotice`, other locales via Weblate.
 
 ### Open decisions to resolve during planning
 
@@ -91,13 +93,22 @@ Plan: 1 of 3 complete; 2 of 3 PAUSED at blocking on-device checkpoint
 ### Blockers
 
 - **[01-01] Tests not executed — Flutter/Dart toolchain absent in the execution environment.** `flutter test test/common/utils/{list_storage,json_serialize}_test.dart` and `flutter analyze lib/...` could NOT be run. Source-level verification passed (no `FileMode.writeOnly`, no `rethrow` in `listFromString`, all artifact markers present) and fixtures were validated by review, but GREEN must be confirmed on a machine with Flutter 3.22.2 before relying on these guarantees in CI.
+- **[01-03] `flutter gen-l10n` + `flutter analyze lib/app.dart` not run — toolchain absent.** The new `AppLocalizations.alarmsResetNotice` getter referenced in `lib/app.dart` does NOT exist on disk yet; codegen (`flutter gen-l10n` or a normal build) MUST run before `lib/app.dart` compiles. ARB key is present + valid JSON, only `app_en.arb` touched. Source assertions all pass (Semantics-wrapped, localized-not-literal, gated, clear-after-show, no state-mgmt lib). Deferred — requires Flutter 3.22.2 before merge.
 
 ## Session Continuity
 
-- **Last action:** Executed Phase 1 Plan 02 (boot guard / time-boxed splash / idempotent reschedule). Autonomous Tasks 1-2 committed atomically (`284f1f6` defer-until-unlock guard + isDeviceLocked() + try/catch fix + manifest narrowing, `f247448` time-boxed main() init). Task 3 is a blocking on-device `checkpoint:human-verify` — returned to the orchestrator, NOT self-approved. BOOT-01/02/03 delivered at source level. Mechanism B chosen (boot-isolate reachability); 8s time-box; funnel idempotency confirmed.
-- **Next action:** Human runs the Task 3 on-device verification (secure-lock FBE device, API 24+): `flutter build apk --debug --flavor dev`, create alarms+timer, `adb reboot`, check logcat pre-unlock for the `deferring` log + absence of `IllegalStateException`, unlock → normal UI + exactly-once re-arm. On "approved", proceed to Plan 03 (alarms-lost notice).
-- **Watch:** Run `flutter analyze lib/system/logic/device_lock.dart lib/system/logic/handle_boot.dart lib/main.dart` to confirm Plan 02 GREEN (toolchain absent here). Also still owe Plan 01 `flutter test`/`flutter analyze`.
+- **Last action:** Executed Phase 1 Plan 03 (alarms-lost one-time notice). Autonomous Tasks 1-2 committed atomically (`d7f9de2` new `alarmsResetNotice` ARB string — English baseline only; `98d028b` `app.dart` post-frame `_showAlarmsResetNoticeIfNeeded()` — Semantics-wrapped localized SnackBar gated on `SalvageReport.alarmsWereLost` + post-onboarding route, cleared after one show). Task 3 is a blocking on-device `checkpoint:human-verify` — returned to the orchestrator, NOT self-approved. One Rule 3 auto-fix: dropped a `localizations.ok` SnackBarAction (no such ARB key) in favour of swipe-to-dismiss.
+- **Next action:** Human runs **two** pending Phase-1 on-device checkpoints:
+  - **01-03 Task 3** — `flutter run --flavor dev`; corrupt `Clock/alarms.txt` so per-entry salvage drops ≥1 entry → relaunch shows the localized notice exactly once (gone on next relaunch); TalkBack announces it; blank a SETTINGS group file → NO notice; confirm swipe-dismiss. Approve when it fires once on alarm loss only, is announced, and dismissible.
+  - **01-02 Task 3** — secure-lock FBE device, API 24+: `flutter build apk --debug --flavor dev`, create alarms+timer, `adb reboot`, check logcat pre-unlock for the `deferring` log + absence of `IllegalStateException`, unlock → normal UI + exactly-once re-arm.
+- **Watch:** Toolchain absent here — owe `flutter gen-l10n` (generates `AppLocalizations.alarmsResetNotice`, needed for `lib/app.dart` to compile) then `flutter analyze lib/app.dart` for 01-03; `flutter analyze lib/system/logic/device_lock.dart lib/system/logic/handle_boot.dart lib/main.dart` for 01-02; and Plan 01 `flutter test`/`flutter analyze`. Run all on a Flutter 3.22.2 machine before merge.
 
 ---
 *State initialized: 2026-05-30*
-*Last updated: 2026-05-30 after executing 01-02-PLAN.md (Tasks 1-2; Task 3 checkpoint pending)*
+*Last updated: 2026-05-30 after executing 01-03-PLAN.md (Tasks 1-2; Task 3 blocking on-device checkpoint pending — 01-02 Task 3 also still pending)*
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Notes |
+|-------|------|----------|-------|
+| Phase 01 P03 | 6min | 2 tasks | 2 files |
