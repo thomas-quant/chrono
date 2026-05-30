@@ -36,6 +36,7 @@ The alarm must reliably ring and reliably stop. An alarm app that crashes on boo
 - [ ] Escape-hatch fallback is ON by default and configurable: after a threshold (failed attempts / elapsed time) a plain dismiss is allowed; user can tighten or disable
 - [ ] Scoped to alarms only (not timers) for this milestone
 - [ ] Camera permission requested/handled; `CAMERA` added to manifest
+- [ ] Torch/flashlight toggle + setup "test scan" (table stakes per research)
 - [ ] New strings localized (at least English; others via Weblate)
 
 **Bugs — Reliability (CRITICAL):**
@@ -49,30 +50,32 @@ The alarm must reliably ring and reliably stop. An alarm app that crashes on boo
 
 ### Out of Scope
 
+- **Android 5.0 / 5.1 (API 21–22) support** — dropped this milestone. The F-Droid-clean scanner (flutter_zxing 2.2.x) requires minSdk 23. Product decision: bump minSdk 21 → 23 (Android 6.0+); 5.1 is a negligible install base.
 - DST/timezone recompute for recurring alarms (#359) — HIGH but genuinely tricky (timezone-aware recompute); deserves its own scoped milestone → backlog
 - Decompiling Alarmy's APK — clean-room implementation against Chrono's own task interface instead; avoids license/copyright risk
 - QR/scan task for timers — timers use a separate dismiss path; alarms-only this milestone
 - Gating snooze (in addition to dismiss) behind the scan task — dismiss-only for v1
+- Pre-first-unlock alarm firing (device-protected storage) — assumed out unless validated as needed in the boot phase; default is defer-until-unlock
 - New community-contributed tasks (#450 Squat/Light), record-ringtone (#451) — need separate review → backlog
 - Snooze-feature PRs (#515 Custom Snooze, #475 fat snooze button) — must not layer features on a broken snooze core; revisit after snooze cluster is fixed → backlog
 - The long tail of feature requests (multiple snooze durations, widgets, NFC task, Spotify, etc.) → backlog
 
 ## Context
 
-- **Existing task framework** (key enabler): `lib/alarm/types/alarm_task.dart` (`AlarmTask`, `AlarmTaskType` enum, `AlarmTaskSchema`), registry in `lib/alarm/data/alarm_task_schemas.dart` (`alarmTaskSchemasMap`), task widgets in `lib/alarm/widgets/tasks/`, config UI via `CustomizableListSetting<AlarmTask>` in `lib/alarm/data/alarm_settings_schema.dart`. The ringing screen `lib/alarm/screens/alarm_notification_screen.dart` iterates tasks and calls `onSolve` → dismiss automatically; new task types are picked up without touching orchestration.
-- **Adding a task type** requires: new enum value, schema-map entry, a `*_task.dart` widget calling `onSolve()`, a scanner dependency (`mobile_scanner` is the modern candidate), `CAMERA` permission, and l10n strings. A user already requested scan-to-dismiss (#206).
-- **Reliability root causes** independently corroborated in `.planning/codebase/CONCERNS.md`: rising-volume cancellation flaw, silent storage fallbacks (GetStorage), dual-storage drift, no null-guard before `json.decode`. Suspected files: `lib/system/logic/handle_boot.dart`, `lib/alarm/logic/alarm_isolate.dart`, `lib/alarm/types/alarm.dart` (snooze ~lines 218–247), `lib/settings/types/setting.dart` (DateTimeSetting ~957–967), `lib/common/widgets/fields/date_picker_bottom_sheet.dart:145`, `lib/audio/types/ringtone_player.dart`.
+- **Existing task framework** (key enabler): `lib/alarm/types/alarm_task.dart` (`AlarmTask`, `AlarmTaskType` enum, `AlarmTaskSchema`), registry in `lib/alarm/data/alarm_task_schemas.dart` (`alarmTaskSchemasMap`), task widgets in `lib/alarm/widgets/tasks/`, config UI via `CustomizableListSetting<AlarmTask>` in `lib/alarm/data/alarm_settings_schema.dart`. The ringing screen `lib/alarm/screens/alarm_notification_screen.dart` iterates tasks and calls `onSolve` → dismiss automatically; new task types are picked up without touching orchestration. Task config rides the existing `SettingGroup` JSON serialization (a `StringSetting` already exists for the registered code — no `json_serialize.dart` factory entry needed).
+- **Scanner decision (research-backed):** `flutter_zxing` is the only F-Droid-clean Flutter scanner (native ZXing via FFI, zero Google ML Kit / Play Services). All ML-Kit options (`mobile_scanner`, etc.) break F-Droid. With minSdk now 23, pin **`flutter_zxing` 2.2.x exactly** (NOT `^` — 2.3.0 needs Flutter ≥3.41, incompatible with Chrono's 3.22.2). `ReaderWidget` provides camera + torch + scan frame; native build needs CMake/NDK. Camera permission reuses existing `permission_handler ^11.3.1`. A user already requested scan-to-dismiss (#206).
+- **Reliability root causes** confirmed at line level (see research + `.planning/codebase/CONCERNS.md`): boot path `handle_boot.dart:20` calls `initializeIsolate()` outside try/catch and reads credential-encrypted `get_storage` pre-unlock; unguarded `json.decode` at `setting_group.dart:265`; non-atomic `saveTextFile` (`list_storage.dart:82-90`); snooze `.floor()` at `alarm.dart:226,234`; `handleDismiss()` (`alarm.dart:309-315`) leaves a one-shot enabled (#457); `DateTimeSetting` epoch round-trip (`setting.dart:957-966`); rising-volume uncancellable `Future.delayed` ramp in `ringtone_player.dart`. No new deps needed for any reliability fix.
 - **Community PRs** worth merging this milestone: #467 (rising volume), #466 (FAB), possibly #513 (one-shot timers, self-contained). Credits contributors and avoids duplicate work.
-- Codebase already mapped: see `.planning/codebase/` (ARCHITECTURE, STACK, STRUCTURE, CONVENTIONS, INTEGRATIONS, TESTING, CONCERNS).
+- Codebase already mapped: see `.planning/codebase/` (ARCHITECTURE, STACK, STRUCTURE, CONVENTIONS, INTEGRATIONS, TESTING, CONCERNS). Domain research in `.planning/research/` (STACK, FEATURES, ARCHITECTURE, PITFALLS, SUMMARY).
 
 ## Constraints
 
-- **Tech stack**: Flutter 3.22.x / Dart 3.4+, Android-only (minSdk 21, compileSdk 34); Kotlin 1.8, Java 17. New deps must support this toolchain.
+- **Tech stack**: Flutter 3.22.x / Dart 3.4+, Android-only; Kotlin 1.8, Java 17. **minSdk 23** (raised from 21 this milestone), compileSdk 34. New deps must support this toolchain.
 - **Architecture**: No state-management library; `setState` + `ListenerManager` + isolate `IsolateNameServer` ports. Settings are string-keyed `SettingGroup`s serialized to JSON. New task config must follow this pattern.
 - **Background execution**: Alarm firing runs in a separate Dart isolate; the scan task UI runs in the alarm notification screen (main isolate) — camera lifecycle must be handled there, not in the firing isolate.
 - **Licensing**: Open-source project — clean-room only; no decompiled or copied Alarmy code/assets.
-- **Accessibility / ethics**: Dismiss challenges must not trap users — escape hatch on by default; keep tasks optional.
-- **Distribution**: Google Play (AAB) + GitHub Releases (APK) + F-Droid. F-Droid forbids proprietary blobs — the scanner library must be FOSS-compatible (rules out anything pulling Google ML Kit's proprietary models if F-Droid builds must keep working; verify during research).
+- **Accessibility / ethics**: Dismiss challenges must not trap users — escape hatch on by default; keep tasks optional; escape hatch must be screen-reader-reachable (it is also the accessibility path).
+- **Distribution**: Google Play (AAB) + GitHub Releases (APK) + F-Droid. F-Droid forbids proprietary blobs — the scanner library MUST be FOSS-clean (verified exit criterion: zero `mlkit`/`gms`/`play-services` in the Gradle graph).
 
 ## Key Decisions
 
@@ -85,9 +88,12 @@ The alarm must reliably ring and reliably stop. An alarm app that crashes on boo
 | Escape hatch ON by default, configurable | Non-predatory, accessible; an OSS app shouldn't trap users | — Pending |
 | Accept QR + common 1D barcodes | Lets users register any physical product code, not just printed QR | — Pending |
 | Alarms only (not timers) this milestone | Task framework is alarm-specific; keeps v1 tight | — Pending |
+| `flutter_zxing` as the scanner (not ML Kit) | Only F-Droid-clean option; ML Kit breaks F-Droid distribution | — Pending |
+| **Bump minSdk 21 → 23; pin flutter_zxing 2.2.x** | 2.2.x is F-Droid-clean but needs API 23; Android 5.0/5.1 is a negligible base. Overrides STACK.md's keep-21 lean | — Pending |
 | Reliability bugs share this milestone with the feature | An unreliable alarm app fails its core value; fix it alongside | — Pending |
 | Defer DST (#359) to its own milestone | Timezone-aware recompute is tricky and deserves focus | — Pending |
 | Merge good community PRs (#467/#466) rather than reimplement | Credits contributors, less duplicate work | — Pending |
+| Pull lock-screen camera spike forward | Camera-over-keyguard is the biggest unknown; a black preview reshapes the feature | — Pending |
 
 ## Evolution
 
