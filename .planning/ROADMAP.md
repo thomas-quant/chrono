@@ -37,7 +37,10 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
   2. After a reboot and unlock, every alarm and timer is rescheduled exactly once — no duplicates, no missed reschedules — even if the boot path and app launch both run.
   3. A settings/list file that is missing, half-written, or contains invalid JSON recovers to a safe default (and is logged), instead of crashing or hanging the app.
   4. A write that is interrupted (e.g. process killed mid-save) never leaves a half-written file — the previous good file survives until the new one is fully written.
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 01-01-PLAN.md — Harden the text storage path: atomic temp-write+rename, per-entry salvage, null-safe SettingGroup.load, alarm-loss flag (STOR-01/02, BOOT-04)
+- [ ] 01-02-PLAN.md — Defer-until-unlock boot guard, time-boxed splash, idempotent reschedule funnel + on-device reboot verify (BOOT-01/02/03)
+- [ ] 01-03-PLAN.md — One-time localized, screen-reader-reachable "alarms were reset" notice gated on actual alarm loss (BOOT-04, STOR-02)
 
 ### Phase 2: Snooze Reliability
 **Goal**: Snooze does exactly what the user expects — it always re-rings after the set delay, respects the max count, and a snoozed one-shot alarm that gets dismissed stays off for good.
@@ -79,7 +82,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Storage & Boot Reliability | 0/0 | Not started | - |
+| 1. Storage & Boot Reliability | 0/3 | Planned | - |
 | 2. Snooze Reliability | 0/0 | Not started | - |
 | 3. Date, Volume & FAB High-Value Fixes | 0/0 | Not started | - |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |
