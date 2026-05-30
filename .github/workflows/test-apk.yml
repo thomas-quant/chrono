@@ -1,0 +1,72 @@
+name: Test APK (debug, sideload)
+
+# Manual one-click build for on-device testing.
+# Produces an unsigned-with-debug-key dev-flavor APK (applicationId
+# com.vicolo.chrono.dev, "Chrono Dev") that installs alongside a real Chrono.
+# Needs NO signing secrets, so it works on a fork. Trigger from the Actions tab
+# ("Run workflow") or: gh workflow run test-apk.yml --ref <branch>
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Analyze + Test + Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.2'
+          channel: 'stable'
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      # Generates lib/l10n -> AppLocalizations (incl. the new alarmsResetNotice
+      # getter). pub get usually triggers this, but run it explicitly so analyze
+      # below sees the generated getter.
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      # Informational: scoped to the Phase 1 changed files so pre-existing
+      # project lints don't mask new issues. continue-on-error keeps the APK
+      # building even if analyze flags something — read this step's log.
+      - name: Analyze changed files (informational)
+        continue-on-error: true
+        run: |
+          flutter analyze \
+            lib/common/utils/list_storage.dart \
+            lib/common/utils/paths.dart \
+            lib/common/utils/json_serialize.dart \
+            lib/common/logic/salvage_report.dart \
+            lib/settings/types/setting_group.dart \
+            lib/system/logic/device_lock.dart \
+            lib/system/logic/handle_boot.dart \
+            lib/main.dart \
+            lib/app.dart
+
+      # Informational: runs the new storage tests (and the rest of the suite).
+      # continue-on-error so a red test never blocks producing a testable APK.
+      - name: Test (informational)
+        continue-on-error: true
+        run: flutter test
+
+      # The real deliverable: a debug-signed dev APK, no secrets required.
+      - name: Build debug dev APK
+        run: flutter build apk --debug --flavor dev
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrono-dev-debug-apk
+          path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 7
