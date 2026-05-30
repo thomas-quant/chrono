@@ -1,3 +1,17 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: Roadmap created; ready for `/gsd-plan-phase 1`
+last_updated: "2026-05-30T15:06:55.268Z"
+progress:
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
+---
+
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
 
 ## Project Reference
