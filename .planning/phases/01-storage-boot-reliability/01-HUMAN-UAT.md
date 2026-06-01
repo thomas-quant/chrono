@@ -18,7 +18,11 @@ result: [pending]
 
 ### 2. One-time alarm-loss notice + TalkBack (BOOT-04 / D-06 accessibility)
 expected: With a Flutter build (after `flutter gen-l10n`): corrupting `Clock/alarms.txt` so per-entry salvage drops ≥1 alarm (or making the top-level list invalid) → on next launch the localized "alarms were reset" SnackBar appears exactly once, is announced by TalkBack (Semantics liveRegion reachable), and is dismissible; relaunching again does NOT show it (flag cleared). Negative case: blanking a non-alarm settings file or launching with valid alarms shows NO notice (silent + logged only).
-result: [pending]
+result: CONVERTED TO AUTOMATED CI COVERAGE (2026-06-01) — on-device manual UAT was impractical (corrupting app-private `alarms.txt` needs root/ADB on a release build). Authored two test files (commit `3e8bd01`):
+  - `test/common/logic/salvage_report_test.dart` (unit) — the show/silent gate: `<Alarm>` drop/reset sets the flag; non-Alarm recovery stays silent (negative case); `clear()` resets; flag sticky across mixed losses.
+  - `test/app/alarms_reset_notice_test.dart` (widget) — notice shows exactly once on alarm loss then clears the flag; content is a `Semantics(liveRegion)` node (TalkBack announce contract); swipe-dismissible; silent when no alarm lost.
+  STATUS: NOT yet executed — Flutter/Dart toolchain absent locally; must go GREEN in CI (Flutter 3.22.2, after `flutter gen-l10n`) before this is PASSED.
+  RESIDUAL (not automatable): the *audible* TalkBack announcement and the `GetStorage('onboarded')` onboarding-route gate are not covered by the widget harness (full `App` boot needs platform channels) — accept on the next manual device pass or treat as low-risk given the liveRegion contract is asserted.
 
 ### 3. Toolchain gate — build, analyze, test (all requirements)
 expected: On Flutter 3.22.2 / Dart 3.4+: `flutter gen-l10n` generates the `AppLocalizations.alarmsResetNotice` getter; `flutter analyze lib/` exits 0 (no new issues in the changed files); `flutter test test/common/utils/list_storage_test.dart test/common/utils/json_serialize_test.dart` exits 0. (Test files were authored during execution but NOT run locally — the Flutter/Dart toolchain is absent in the dev environment.)
@@ -32,5 +36,6 @@ issues: 0
 pending: 2
 skipped: 0
 blocked: 0
+notes: Test 2 converted to automated CI coverage (commit 3e8bd01) — counts stay "pending" until the tests run GREEN in CI. Test 1 remains a manual phone check.
 
 ## Gaps
