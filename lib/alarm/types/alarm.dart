@@ -1,4 +1,5 @@
 import 'package:audio_session/audio_session.dart';
+import 'package:clock/clock.dart';
 import 'package:clock_app/alarm/logic/alarm_reminder_notifications.dart';
 import 'package:clock_app/alarm/logic/schedule_alarm.dart';
 import 'package:clock_app/alarm/types/alarm_runner.dart';
@@ -222,16 +223,26 @@ class Alarm extends CustomizableListItem {
     _isEnabled = true;
     // Snoozing should cancel any skip
     _skippedTime = null;
-    _snoozeTime = DateTime.now().add(
-      Duration(minutes: snoozeLength.floor()),
-    );
-    await _scheduleSnooze();
+    // Compute the snooze delay ONCE in seconds so the displayed _snoozeTime and
+    // the real AndroidAlarmManager delay cannot diverge. snoozeLength is a double
+    // (e.g. 0.5 min) — converting to whole seconds (not floored minutes) honors
+    // fractional lengths (SNZ-02). Clamp to a minimum of 1 second so a near-zero
+    // value never floors to 0 (which would make scheduleAlarm throw "schedule in
+    // the past" or re-fire instantly).
+    final int snoozeSeconds = (snoozeLength * 60).round();
+    final Duration snoozeDelay =
+        Duration(seconds: snoozeSeconds < 1 ? 1 : snoozeSeconds);
+    // Read the current time via clock.now() (package:clock) so frozen-clock tests
+    // can pin _snoozeTime exactly (D-B). This is the ONLY DateTime.now()->clock.now()
+    // switch in scope.
+    _snoozeTime = clock.now().add(snoozeDelay);
+    await _scheduleSnooze(snoozeDelay);
   }
 
-  Future<void> _scheduleSnooze() async {
+  Future<void> _scheduleSnooze(Duration delay) async {
     await scheduleSnoozeAlarm(
       id,
-      Duration(minutes: snoozeLength.floor()),
+      delay,
       ScheduledNotificationType.alarm,
       "_scheduleSnooze(): Alarm snoozed for $snoozeLength minutes",
     );
@@ -334,7 +345,11 @@ class Alarm extends CustomizableListItem {
         if (DateTime.now().isAfter(_snoozeTime!)) {
           _unSnooze();
         } else {
-          await _scheduleSnooze();
+          // Re-schedule the pending snooze for the time remaining until
+          // _snoozeTime (set in snooze()), so re-evaluating a still-snoozed
+          // alarm preserves its original re-ring instant instead of resetting
+          // it to a full snoozeLength ahead.
+          await _scheduleSnooze(_snoozeTime!.difference(DateTime.now()));
         }
       }
 
