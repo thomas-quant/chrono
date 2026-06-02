@@ -191,7 +191,10 @@ void stopAlarm(int scheduleId, AlarmStopAction action) async {
         RingtonePlayer.playTimer(timer);
       }
     }
-    await updateAlarmById(scheduleId, (alarm) async => alarm.handleDismiss());
+    logger.i(
+        "[stopAlarm] Dismissing alarm $scheduleId — resolving deactivating dismiss");
+    await updateAlarmById(
+        scheduleId, (alarm) async => await alarm.handleDismiss());
   }
   RingingManager.stopAlarm();
 }
