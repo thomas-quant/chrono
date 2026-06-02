@@ -217,7 +217,15 @@ class Alarm extends CustomizableListItem {
   }
 
   Future<void> snooze() async {
-    // The alarm can only be snoozed the number of times specified in the settings
+    // The alarm can only be snoozed the number of times specified in the settings.
+    // This is the AUTHORITATIVE gate (SNZ-04): the hidden snooze button
+    // (canBeSnoozed) is only a UI hint and can be stale across the isolate
+    // boundary. An over-max attempt resolves as a DISMISS (D-A) rather than a
+    // silent no-op, so the alarm can never be left ringing forever (Pitfall 5).
+    if (maxSnoozeIsReached) {
+      await _resolveDismiss();
+      return;
+    }
     _snoozeCount++;
     // When the alarm rang, it was disabled, so we need to enable it again if the user presses snooze
     _isEnabled = true;
@@ -317,12 +325,36 @@ class Alarm extends CustomizableListItem {
     // _isFinished = true;
   }
 
-  void handleDismiss() {
+  /// Resolves a dismiss the same way the user-list dismiss already does
+  /// (`alarm_screen.dart:188`): reset the snooze count, cancel the pending
+  /// snooze, then re-evaluate the active schedule. Because `cancelSnooze()`
+  /// clears `_snoozeTime` first, `isSnoozed` is false when `update()` runs, so
+  /// `update()` disables a resolved one-shot (`activeSchedule.isDisabled`) AND
+  /// finishes a finished-dates schedule (`isFinished`). A disabled alarm is
+  /// skipped on the next trigger (`alarm_isolate.dart` enabled-check), so this
+  /// stops the #457 re-arm by construction (SNZ-03/#457, SNZ-01/SNZ-05).
+  Future<void> _resolveDismiss() async {
+    // A real dismiss resets the count (preserves the old handleDismiss semantics).
     _snoozeCount = 0;
+    // Cancel the pending AndroidAlarmManager snooze by id and clear _snoozeTime.
+    await cancelSnooze();
+    // Re-evaluate the active schedule; deactivates a resolved one-shot / finished
+    // dates schedule via the canonical update() path (schedule-agnostic).
+    await update("_resolveDismiss(): re-evaluate schedule after dismiss");
+    // Read isFinished AFTER update() — update() may transition a dates schedule
+    // to finished. updateAlarmById acts on isMarkedForDeletion after the callback
+    // returns, so this flag is honored.
     if (scheduleType == OnceAlarmSchedule && shouldDeleteAfterRinging ||
         shouldDeleteAfterFinish && isFinished) {
       _markedForDeletion = true;
     }
+  }
+
+  /// Public async dismiss entry point (D-E). Delegates to [_resolveDismiss] so
+  /// the isolate dismiss branch and the cross-file regression test can drive the
+  /// deactivating dismiss through one shared implementation.
+  Future<void> handleDismiss() async {
+    await _resolveDismiss();
   }
 
   Future<void> handleEdit(String description) async {
