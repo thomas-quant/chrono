@@ -15,6 +15,22 @@ import 'package:flutter_test/flutter_test.dart';
 // The SNZ-02 exact "now + 30s" assertion is only valid because Plan 01
 // switched snooze() to read clock.now() (D-B); withClock(Clock.fixed(...))
 // pins the time the model reads.
+
+/// Returns a copy of [base] whose OnceAlarmSchedule has already "fired": its
+/// runner holds a *past* schedule time. This is required to exercise the real
+/// production "dismiss disables a one-shot" path. A fresh, never-scheduled
+/// once-alarm has a null runner time, so re-evaluating it on dismiss recomputes
+/// a *future* fire time and leaves it enabled — a OnceAlarmSchedule disables
+/// only once its scheduled instant is in the past (once_alarm_schedule.dart:30).
+/// In production the alarm has always fired (past instant) by dismiss time.
+Alarm _firedOnceAlarm(Alarm base) {
+  final json = base.toJson()!;
+  // schedules[0] is the OnceAlarmSchedule (createSchedules / fromJson ordering).
+  json['schedules'][0]['alarmRunner']['currentScheduleDateTime'] =
+      DateTime(2000, 1, 1, 2, 30).millisecondsSinceEpoch;
+  return Alarm.fromJson(json);
+}
+
 void main() {
   // Required so the statically-constructed appSettings schema is reachable
   // for Alarm() construction (construction analog: alarm_card_test.dart).
@@ -56,7 +72,10 @@ void main() {
       'SNZ-03: a once-alarm snoozed then dismissed is disabled and not '
       're-armed (no re-arm; #457)',
       () async {
-        // Default Type is OnceAlarmSchedule.
+        // Default Type is OnceAlarmSchedule. Simulate one that has already
+        // fired (past runner time) so dismiss exercises the real disable path;
+        // a fresh, never-scheduled once-alarm would re-arm to a future time.
+        alarm = _firedOnceAlarm(alarm);
         await alarm.snooze();
         expect(alarm.isSnoozed, true);
         expect(alarm.isEnabled, true);
@@ -98,6 +117,10 @@ void main() {
       'SNZ-04: snoozing past Max Snoozes does not increment and resolves as a '
       'dismiss (never left ringing)',
       () async {
+        // A fired once-alarm (past runner time) so the over-max dismiss
+        // resolves to disabled — matching production, where the alarm has
+        // already fired by the time the max-snooze gate trips.
+        alarm = _firedOnceAlarm(alarm);
         alarm.setSettingWithoutNotify("Max Snoozes", 2);
 
         await alarm.snooze(); // count -> 1
@@ -125,8 +148,12 @@ void main() {
         final rebuilt = Alarm.fromJson(alarm.toJson());
 
         // The count is the cross-isolate source of truth; it must survive
-        // serialization so the firing isolate reloads the correct value.
+        // serialization so the firing isolate reloads the correct value. The
+        // snooze state itself must also round-trip (the firing isolate reloads
+        // a still-snoozed, still-enabled alarm — not a silently reset one).
         expect(rebuilt.snoozeCount, 1);
+        expect(rebuilt.isSnoozed, true);
+        expect(rebuilt.isEnabled, true);
       },
     );
 
