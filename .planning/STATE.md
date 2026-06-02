@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-02T19:45:24.707Z"
+status: verifying
+last_updated: "2026-06-02T19:52:32.410Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
-  percent: 25
+  completed_plans: 5
+  percent: 50
 ---
 
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
@@ -23,21 +23,21 @@ progress:
 
 ## Current Position
 
-Phase: 02 (snooze-reliability) — EXECUTING
-Plan: 2 of 2
-Next: Phase 2 (Snooze Reliability) — not yet planned
+Phase: 02 (snooze-reliability) — READY FOR VERIFICATION
+Plan: 2 of 2 (both plans code-complete & committed)
+Next: Phase 2 verification, then Phase 3 (Date, Volume & FAB) — not yet planned
 
-- **Phase:** 1 of 4 closed; Phase 2 of 4 is next
-- **Closure basis:** All 3 plans code-complete & committed. Test 3 (toolchain gate) PASSED via CI for real. The two on-device checks were WAIVED by the user and recorded as ACCEPTED (not independently verified): Test 1 (reboot→reschedule) has no recorded on-device run; Test 2 (alarms-reset notice) was converted to committed CI tests (commit `3e8bd01`) that have not yet had a green CI run.
-- **Status:** Ready to execute
-- **Progress:** [████████░░] 80%
+- **Phase:** 1 of 4 closed; Phase 2 of 4 code-complete (both plans committed), pending verification.
+- **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
+- **Status:** Phase complete (code) — ready for verification
+- **Progress:** [██████████] 100%
 
 ## Phase Map
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 1 | Storage & Boot Reliability | BOOT-01..04, STOR-01..02 (6) | ✅ Done (closed 2026-06-02 by user sign-off; on-device checks accepted, not independently verified) |
-| 2 | Snooze Reliability | SNZ-01..05 (5) | Not started |
+| 2 | Snooze Reliability | SNZ-01..05 (5) | 🟡 Code-complete (both plans committed) — ready for verification (CI test/analyze + on-device smoke owed) |
 | 3 | Date, Volume & FAB High-Value Fixes | DATE-01..02, VOL-01, FAB-01, PR-01..02 (6) | Not started |
 | 4 | QR/Barcode Scan-to-Dismiss Task | BUILD-01..02, SCAN-01..12 (14) | Not started |
 
@@ -98,9 +98,9 @@ Next: Phase 2 (Snooze Reliability) — not yet planned
 
 ## Session Continuity
 
-- **Last action:** Executed Phase 2 Plan 01 (snooze state-machine source fix, SNZ-01..05). All 3 tasks autonomous, committed atomically: `67ae5f7` seconds-based snooze duration shared via `_scheduleSnooze(Duration delay)` + `clock.now()` + `Length` `snapLength:1` (SNZ-02); `c70f156` `_resolveDismiss()` (cancelSnooze + canonical `update()`, schedule-agnostic), public async `handleDismiss()` delegator, and max-snooze gate in `snooze()` resolving over-max as a dismiss (SNZ-03/SNZ-04/#457); `3e0c69c` awaited deactivating dismiss in the isolate `stopAlarm` branch (SNZ-01/SNZ-05). One Rule-1 in-scope fix: updated the third `_scheduleSnooze()` caller inside `update()` to pass the remaining duration. `update_alarms.dart` + `alarm_screen.dart` reused unchanged. 13/13 source assertions pass.
-- **Next action:** Plan 02 (wave 2) — author `test/alarm/types/alarm_snooze_test.dart` (SNZ-01..05 regression: fractional 30s snooze under frozen clock, once/dates snooze→dismiss deactivation, over-max→dismiss, `snoozeCount` toJson↔fromJson round-trip) and repoint the `test-apk.yml` analyze list to the three Phase-2 files.
-- **Watch (owed CI/human gates — toolchain absent here, NO push performed):** Plan 02's `flutter test` + scoped `flutter analyze` on `lib/alarm/types/alarm.dart`, `lib/alarm/logic/alarm_isolate.dart`, `lib/alarm/data/alarm_settings_schema.dart` run on Flutter 3.22.2 via CI. Owed dispatch (user-authorized only — both remotes outward-facing): `gh workflow run test-apk.yml --ref <phase-branch>` then `gh run watch`; push the phase branch to trigger `tests.yml`. Plus an on-device snooze→dismiss smoke check (once-alarm dismiss does not reappear; fractional snooze re-rings ~30s; over-max dismisses). Phase-1 gates (`01-02`/`01-03` on-device + l10n/analyze) still owed from the prior phase.
+- **Last action:** Executed Phase 2 Plan 02 (wave 2 — snooze regression suite + analyze repoint). Both tasks autonomous, committed atomically: `6e332c2` new `test/alarm/types/alarm_snooze_test.dart` (SNZ-01..05 — exact `now+30s` under `withClock(Clock.fixed(...))` enabled by Plan-01's `clock.now()`; once + finished-dates snooze→dismiss deactivation #457; over-max→dismiss; `snoozeCount` `toJson↔fromJson` round-trip; SNZ-01/05 survives an unrelated `update()` still enabled+snoozed; asserts on `Alarm` flags only — OS no-ops under `FLUTTER_TEST`); `09dc3ec` repointed `test-apk.yml`'s informational `flutter analyze` gate from the nine Phase-1 files to the four Phase-2 paths (`alarm.dart`, `alarm_isolate.dart`, `alarm_settings_schema.dart`, `alarm_snooze_test.dart`), keeping `continue-on-error: true` and all other steps unchanged. No deviations. No `lib/` or `pubspec.yaml` change. All source-level verify assertions pass.
+- **Next action:** Verify Phase 2, then plan Phase 3 (Date, Volume & FAB High-Value Fixes — DATE-01..02, VOL-01, FAB-01, PR-01..02).
+- **Watch (owed CI/human gates — toolchain absent here, NO push performed):** Plan 02's `flutter test` runs via `tests.yml` on push (the authoritative behavioral gate — the new `Alarm snooze` cases run there); the scoped `flutter analyze` (now pointed at the Phase-2 files) + the sideloadable `chrono-dev-release-apk` come from `gh workflow run test-apk.yml`. Owed commands (user-authorized only — both remotes outward-facing): `git push <remote> <phase-branch>` then `gh run watch` (capture the `tests.yml` run id/result); `gh workflow run test-apk.yml --ref <phase-branch>` then `gh run watch` (read the Analyze log for new issues; download the APK). Plus the end-of-phase on-device snooze→dismiss smoke (once-alarm dismiss does not reappear; fractional snooze re-rings ~30s; over-max dismisses; normal snooze does not silently disable). Phase-1 gates (`01-02`/`01-03` on-device + l10n/analyze) still owed from the prior phase.
 
 ---
 *State initialized: 2026-05-30*
@@ -112,8 +112,10 @@ Next: Phase 2 (Snooze Reliability) — not yet planned
 |-------|------|----------|-------|
 | Phase 01 P03 | 6min | 2 tasks | 2 files |
 | Phase 02 P01 | 8min | 3 tasks | 3 files |
+| Phase 02 P02 | ~7min | 2 tasks | 2 files |
 
 ## Decisions
 
 - [Phase ?]: [02-01] Snooze fixed at source: seconds-based duration shared between _snoozeTime and scheduleSnoozeAlarm; snooze() reads clock.now() (D-B); snapLength:1 on Length slider (D-D).
 - [Phase ?]: [02-01] Single _resolveDismiss() (cancelSnooze + canonical update()) deactivates one-shot AND finished-dates schedules (D-C/#457); over-max snooze resolves as a dismiss (D-A); handleDismiss() kept as a public async delegator (D-E); isolate dismiss branch awaits it. update_alarms.dart + alarm_screen.dart reused unchanged.
+- [Phase ?]: [02-02] Authored alarm_snooze_test.dart (SNZ-01..05 regression: exact now+30s under withClock from Plan-01 clock.now(); once+finished-dates snooze->dismiss deactivation #457; over-max->dismiss; snoozeCount toJson<->fromJson). Repointed test-apk.yml analyze to the 4 Phase-2 files. No lib/ or pubspec change; flutter test+analyze owed via CI.

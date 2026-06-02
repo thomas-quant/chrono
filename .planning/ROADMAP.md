@@ -22,7 +22,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 ## Phases
 
 - [x] **Phase 1: Storage & Boot Reliability** - Kill the boot black-screen / splash-hang epic with non-fatal loads, atomic writes, an idempotent reschedule primitive, and an unlock-guarded boot path (all 3 plans complete; CLOSED 2026-06-02 by user sign-off — on-device reboot check accepted without independent verification; Test 2 converted to committed CI tests pending first green run)
-- [ ] **Phase 2: Snooze Reliability** - Make snooze reliably re-ring, honor fractional lengths, enforce max-count across the isolate boundary, and stop one-shot alarms re-firing after snooze→dismiss
+- [x] **Phase 2: Snooze Reliability** - Make snooze reliably re-ring, honor fractional lengths, enforce max-count across the isolate boundary, and stop one-shot alarms re-firing after snooze→dismiss (completed 2026-06-02)
 - [ ] **Phase 3: Date, Volume & FAB High-Value Fixes** - Fix specific-date off-by-one, make the rising-volume ramp stop cleanly, and free list items from FAB overlap (merging community PRs #467 and #466)
 - [ ] **Phase 4: QR/Barcode Scan-to-Dismiss Task** - Ship a registered-code scan-to-dismiss alarm task on an F-Droid-clean scanner, with a default-on escape hatch, after de-risking the lock-screen camera
 
@@ -69,7 +69,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — Author alarm_snooze_test.dart: CI-runnable regression coverage for SNZ-01..05 (fractional, once+dates dismiss deactivation, max gate, snoozeCount JSON round-trip, snooze-survives-update)
+- [x] 02-02-PLAN.md — Author alarm_snooze_test.dart: CI-runnable regression coverage for SNZ-01..05 (fractional, once+dates dismiss deactivation, max gate, snoozeCount JSON round-trip, snooze-survives-update)
 
 ### Phase 3: Date, Volume & FAB High-Value Fixes
 
@@ -107,7 +107,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
-| 2. Snooze Reliability | 1/2 | In Progress|  |
+| 2. Snooze Reliability | 2/2 | Complete   | 2026-06-02 |
 | 3. Date, Volume & FAB High-Value Fixes | 0/0 | Not started | - |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |
 
