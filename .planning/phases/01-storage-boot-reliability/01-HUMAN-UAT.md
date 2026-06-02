@@ -1,9 +1,11 @@
 ---
-status: partial
+status: done
 phase: 01-storage-boot-reliability
 source: [01-VERIFICATION.md]
 started: 2026-05-30
-updated: 2026-05-30
+updated: 2026-06-02
+closed_by: user-signoff
+closure_note: "Closed 2026-06-02 at user direction. Test 3 PASSED via CI; Tests 1 & 2 ACCEPTED without independent verification (see per-test results)."
 ---
 
 ## Current Test
@@ -14,7 +16,7 @@ updated: 2026-05-30
 
 ### 1. On-device reboot-before-unlock (BOOT-01 / BOOT-02 / BOOT-03)
 expected: On a secure-lock (PIN/pattern) FBE Android device/emulator (API 24+) with a Flutter 3.22.2 `dev` build installed and ≥2 alarms + 1 timer armed: after `adb reboot` and WITHOUT unlocking, logcat shows a `handleBoot: device locked … deferring` info log and NO `IllegalStateException` / no black screen; after unlock, opening Chrono lands on the normal UI (no splash hang) with alarms/timers still armed and each enabled alarm rescheduled exactly once (no duplicates, no misses). Edge: `adb shell am force-stop com.vicolo.chrono.dev` then reopen → reaches normal UI.
-result: [pending]
+result: ACCEPTED BY USER (2026-06-02) — phase closed at user direction. NOT independently verified in this environment (no device/ADB). Source-level verification stands (D-07 probe-and-catch defer-until-unlock guard, time-boxed splash, idempotent `updateAlarms`/`updateTimers` reschedule funnel; see 01-02-SUMMARY). The reboot→reschedule behavior was waived without a recorded on-device run — re-open if a missed/duplicate alarm surfaces after reboot.
 
 ### 2. One-time alarm-loss notice + TalkBack (BOOT-04 / D-06 accessibility)
 expected: With a Flutter build (after `flutter gen-l10n`): corrupting `Clock/alarms.txt` so per-entry salvage drops ≥1 alarm (or making the top-level list invalid) → on next launch the localized "alarms were reset" SnackBar appears exactly once, is announced by TalkBack (Semantics liveRegion reachable), and is dismissible; relaunching again does NOT show it (flag cleared). Negative case: blanking a non-alarm settings file or launching with valid alarms shows NO notice (silent + logged only).
@@ -32,10 +34,18 @@ result: PASSED via GitHub Actions (fork thomas-quant/chrono, run 26689658169, 20
 
 total: 3
 passed: 1
+accepted: 2
 issues: 0
-pending: 2
+pending: 0
 skipped: 0
 blocked: 0
-notes: Test 2 converted to automated CI coverage (commit 3e8bd01) — counts stay "pending" until the tests run GREEN in CI. Test 1 remains a manual phone check.
+notes: |
+  Phase closed 2026-06-02 at user direction ("checks waived").
+  - Test 3 (toolchain gate): PASSED via CI for real (run 26689658169).
+  - Test 1 (on-device reboot): ACCEPTED — not independently verified here (no device/ADB).
+  - Test 2 (alarms-reset notice): ACCEPTED — converted to committed CI tests (commit 3e8bd01);
+    those tests have NOT yet had a green CI run, so this is acceptance, not a confirmed pass.
+  Re-open the phase if either accepted item later fails (a missed/duplicate alarm after reboot,
+  or a red CI run on the two new test files).
 
 ## Gaps

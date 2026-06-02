@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: paused
-last_updated: "2026-05-30T16:06:10.779Z"
+status: in-progress
+last_updated: "2026-06-02T00:00:00.000Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 1
-  percent: 8
+  completed_plans: 3
+  percent: 25
 ---
 
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
@@ -17,25 +17,25 @@ progress:
 ## Project Reference
 
 - **Core value:** The alarm must reliably ring and reliably stop — reliability before any new feature.
-- **Current focus:** Phase 1 — Storage & Boot Reliability
+- **Current focus:** Phase 2 — Snooze Reliability (Phase 1 closed 2026-06-02)
 - **Type:** Brownfield (bug-fix + feature work on an existing, mature Flutter/Android alarm app).
 - **Key docs:** `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/research/`, `.planning/codebase/`.
 
 ## Current Position
 
-Phase: 1 (Storage & Boot Reliability) — EXECUTING
-Plan: 1 of 3 fully complete; Plans 02 AND 03 each have their autonomous tasks done & committed but are PAUSED at a blocking on-device `checkpoint:human-verify`
+Phase: 1 (Storage & Boot Reliability) — DONE (closed 2026-06-02 by user sign-off)
+Next: Phase 2 (Snooze Reliability) — not yet planned
 
-- **Phase:** 1 of 4 — Storage & Boot Reliability
-- **Plan:** 01-03 (alarms-lost one-time notice) — autonomous Tasks 1-2 complete & committed (`d7f9de2` ARB string, `98d028b` app.dart notice); Task 3 is a blocking `checkpoint:human-verify` (on-device corrupt-alarm-file repro + TalkBack + negative routine-recovery case) returned to the orchestrator, NOT self-approved. Plan 01-02's Task 3 (on-device reboot-before-unlock) is also still pending human verification.
-- **Status:** Executing Phase 1 — Plans 02 and 03 paused at their blocking on-device checkpoints
-- **Progress:** [█░░░░░░░░░] ~8% (1 of 3 Phase-1 plans fully done; 02 + 03 code-complete, pending on-device sign-off)
+- **Phase:** 1 of 4 closed; Phase 2 of 4 is next
+- **Closure basis:** All 3 plans code-complete & committed. Test 3 (toolchain gate) PASSED via CI for real. The two on-device checks were WAIVED by the user and recorded as ACCEPTED (not independently verified): Test 1 (reboot→reschedule) has no recorded on-device run; Test 2 (alarms-reset notice) was converted to committed CI tests (commit `3e8bd01`) that have not yet had a green CI run.
+- **Status:** Phase 1 closed under user sign-off — see `01-HUMAN-UAT.md` closure_note. Re-open if a reboot miss/duplicate appears or the new test files fail in CI.
+- **Progress:** [██▌░░░░░░░] ~25% (1 of 4 phases complete)
 
 ## Phase Map
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | Storage & Boot Reliability | BOOT-01..04, STOR-01..02 (6) | In progress (1/3 plans done; 02 + 03 code-complete, on-device checkpoints pending) |
+| 1 | Storage & Boot Reliability | BOOT-01..04, STOR-01..02 (6) | ✅ Done (closed 2026-06-02 by user sign-off; on-device checks accepted, not independently verified) |
 | 2 | Snooze Reliability | SNZ-01..05 (5) | Not started |
 | 3 | Date, Volume & FAB High-Value Fixes | DATE-01..02, VOL-01, FAB-01, PR-01..02 (6) | Not started |
 | 4 | QR/Barcode Scan-to-Dismiss Task | BUILD-01..02, SCAN-01..12 (14) | Not started |
