@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-last_updated: "2026-06-02T00:00:00.000Z"
+status: executing
+last_updated: "2026-06-02T02:34:28.451Z"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 3
+  total_plans: 5
   completed_plans: 3
   percent: 25
 ---
@@ -28,7 +28,7 @@ Next: Phase 2 (Snooze Reliability) — not yet planned
 
 - **Phase:** 1 of 4 closed; Phase 2 of 4 is next
 - **Closure basis:** All 3 plans code-complete & committed. Test 3 (toolchain gate) PASSED via CI for real. The two on-device checks were WAIVED by the user and recorded as ACCEPTED (not independently verified): Test 1 (reboot→reschedule) has no recorded on-device run; Test 2 (alarms-reset notice) was converted to committed CI tests (commit `3e8bd01`) that have not yet had a green CI run.
-- **Status:** Phase 1 closed under user sign-off — see `01-HUMAN-UAT.md` closure_note. Re-open if a reboot miss/duplicate appears or the new test files fail in CI.
+- **Status:** Ready to execute
 - **Progress:** [██▌░░░░░░░] ~25% (1 of 4 phases complete)
 
 ## Phase Map
