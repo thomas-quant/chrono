@@ -39,22 +39,20 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      # Informational: scoped to the Phase 1 changed files so pre-existing
-      # project lints don't mask new issues. continue-on-error keeps the APK
-      # building even if analyze flags something — read this step's log.
+      # Informational: scoped to the Phase 2 changed files (the snooze fix +
+      # its regression test) so pre-existing project lints don't mask new
+      # issues. continue-on-error keeps the APK building even if analyze flags
+      # something — alarm.dart is a large pre-existing file that may carry
+      # unrelated lints, so read this step's log for NEW issues rather than
+      # expecting a hard zero.
       - name: Analyze changed files (informational)
         continue-on-error: true
         run: |
           flutter analyze \
-            lib/common/utils/list_storage.dart \
-            lib/common/utils/paths.dart \
-            lib/common/utils/json_serialize.dart \
-            lib/common/logic/salvage_report.dart \
-            lib/settings/types/setting_group.dart \
-            lib/system/logic/device_lock.dart \
-            lib/system/logic/handle_boot.dart \
-            lib/main.dart \
-            lib/app.dart
+            lib/alarm/types/alarm.dart \
+            lib/alarm/logic/alarm_isolate.dart \
+            lib/alarm/data/alarm_settings_schema.dart \
+            test/alarm/types/alarm_snooze_test.dart
 
       # Informational: runs the storage tests (and the rest of the suite).
       - name: Test (informational)
