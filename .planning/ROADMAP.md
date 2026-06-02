@@ -61,7 +61,15 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
   3. A one-shot ("once") alarm that is snoozed and then dismissed becomes inactive and does NOT reappear/re-fire the next day.
   4. The configured maximum snooze count is enforced, and the snooze count persists correctly across the alarm/main isolate boundary (it does not silently reset between rings).
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Fix the snooze state machine at source: seconds-based fractional duration + clock.now(), max-count gate (over-max resolves as dismiss), schedule-agnostic _resolveDismiss() wired into the isolate dismiss path (SNZ-01..05)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — Author alarm_snooze_test.dart: CI-runnable regression coverage for SNZ-01..05 (fractional, once+dates dismiss deactivation, max gate, snoozeCount JSON round-trip, snooze-survives-update)
 
 ### Phase 3: Date, Volume & FAB High-Value Fixes
 
@@ -99,7 +107,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
-| 2. Snooze Reliability | 0/0 | Not started | - |
+| 2. Snooze Reliability | 0/2 | Planned | - |
 | 3. Date, Volume & FAB High-Value Fixes | 0/0 | Not started | - |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |
 
@@ -127,4 +135,4 @@ Phases with standard, line-level-confirmed patterns (research-phase optional):
 
 ---
 *Roadmap created: 2026-05-30*
-*Last updated: 2026-05-30 after initial creation*
+*Last updated: 2026-06-02 after planning Phase 2 (Snooze Reliability) — 2 plans, 2 waves*
