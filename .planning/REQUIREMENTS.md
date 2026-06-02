@@ -18,11 +18,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Reliability — Snooze (CRITICAL)
 
-- [ ] **SNZ-01**: Snoozing an alarm reliably re-rings it after the configured snooze length (snooze never silently fails to re-fire)
-- [ ] **SNZ-02**: Fractional snooze lengths are honored (no flooring a sub-minute/decimal value to zero)
-- [ ] **SNZ-03**: A one-shot alarm that is snoozed and then dismissed becomes inactive and does NOT reschedule for the next day (#457)
-- [ ] **SNZ-04**: The configured maximum snooze count is enforced and the snooze count persists correctly across the alarm/main isolate boundary
-- [ ] **SNZ-05**: Snoozing re-rings the alarm without unintentionally dismissing it (#495)
+- [x] **SNZ-01**: Snoozing an alarm reliably re-rings it after the configured snooze length (snooze never silently fails to re-fire)
+- [x] **SNZ-02**: Fractional snooze lengths are honored (no flooring a sub-minute/decimal value to zero)
+- [x] **SNZ-03**: A one-shot alarm that is snoozed and then dismissed becomes inactive and does NOT reschedule for the next day (#457)
+- [x] **SNZ-04**: The configured maximum snooze count is enforced and the snooze count persists correctly across the alarm/main isolate boundary
+- [x] **SNZ-05**: Snoozing re-rings the alarm without unintentionally dismissing it (#495)
 
 ### Reliability — Date & Volume (HIGH)
 
@@ -98,11 +98,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOOT-04 | Phase 1 | Complete |
 | STOR-01 | Phase 1 | Complete |
 | STOR-02 | Phase 1 | Complete |
-| SNZ-01 | Phase 2 | Pending |
-| SNZ-02 | Phase 2 | Pending |
-| SNZ-03 | Phase 2 | Pending |
-| SNZ-04 | Phase 2 | Pending |
-| SNZ-05 | Phase 2 | Pending |
+| SNZ-01 | Phase 2 | Complete |
+| SNZ-02 | Phase 2 | Complete |
+| SNZ-03 | Phase 2 | Complete |
+| SNZ-04 | Phase 2 | Complete |
+| SNZ-05 | Phase 2 | Complete |
 | DATE-01 | Phase 3 | Pending |
 | DATE-02 | Phase 3 | Pending |
 | VOL-01 | Phase 3 | Pending |

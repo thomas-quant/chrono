@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-02T02:34:28.451Z"
+last_updated: "2026-06-02T19:45:24.707Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 25
 ---
 
@@ -17,19 +17,20 @@ progress:
 ## Project Reference
 
 - **Core value:** The alarm must reliably ring and reliably stop — reliability before any new feature.
-- **Current focus:** Phase 2 — Snooze Reliability (Phase 1 closed 2026-06-02)
+- **Current focus:** Phase 02 — snooze-reliability
 - **Type:** Brownfield (bug-fix + feature work on an existing, mature Flutter/Android alarm app).
 - **Key docs:** `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/research/`, `.planning/codebase/`.
 
 ## Current Position
 
-Phase: 1 (Storage & Boot Reliability) — DONE (closed 2026-06-02 by user sign-off)
+Phase: 02 (snooze-reliability) — EXECUTING
+Plan: 2 of 2
 Next: Phase 2 (Snooze Reliability) — not yet planned
 
 - **Phase:** 1 of 4 closed; Phase 2 of 4 is next
 - **Closure basis:** All 3 plans code-complete & committed. Test 3 (toolchain gate) PASSED via CI for real. The two on-device checks were WAIVED by the user and recorded as ACCEPTED (not independently verified): Test 1 (reboot→reschedule) has no recorded on-device run; Test 2 (alarms-reset notice) was converted to committed CI tests (commit `3e8bd01`) that have not yet had a green CI run.
 - **Status:** Ready to execute
-- **Progress:** [██▌░░░░░░░] ~25% (1 of 4 phases complete)
+- **Progress:** [████████░░] 80%
 
 ## Phase Map
 
@@ -97,18 +98,22 @@ Next: Phase 2 (Snooze Reliability) — not yet planned
 
 ## Session Continuity
 
-- **Last action:** Executed Phase 1 Plan 03 (alarms-lost one-time notice). Autonomous Tasks 1-2 committed atomically (`d7f9de2` new `alarmsResetNotice` ARB string — English baseline only; `98d028b` `app.dart` post-frame `_showAlarmsResetNoticeIfNeeded()` — Semantics-wrapped localized SnackBar gated on `SalvageReport.alarmsWereLost` + post-onboarding route, cleared after one show). Task 3 is a blocking on-device `checkpoint:human-verify` — returned to the orchestrator, NOT self-approved. One Rule 3 auto-fix: dropped a `localizations.ok` SnackBarAction (no such ARB key) in favour of swipe-to-dismiss.
-- **Next action:** Human runs **two** pending Phase-1 on-device checkpoints:
-  - **01-03 Task 3** — `flutter run --flavor dev`; corrupt `Clock/alarms.txt` so per-entry salvage drops ≥1 entry → relaunch shows the localized notice exactly once (gone on next relaunch); TalkBack announces it; blank a SETTINGS group file → NO notice; confirm swipe-dismiss. Approve when it fires once on alarm loss only, is announced, and dismissible.
-  - **01-02 Task 3** — secure-lock FBE device, API 24+: `flutter build apk --debug --flavor dev`, create alarms+timer, `adb reboot`, check logcat pre-unlock for the `deferring` log + absence of `IllegalStateException`, unlock → normal UI + exactly-once re-arm.
-- **Watch:** Toolchain absent here — owe `flutter gen-l10n` (generates `AppLocalizations.alarmsResetNotice`, needed for `lib/app.dart` to compile) then `flutter analyze lib/app.dart` for 01-03; `flutter analyze lib/system/logic/device_lock.dart lib/system/logic/handle_boot.dart lib/main.dart` for 01-02; and Plan 01 `flutter test`/`flutter analyze`. Run all on a Flutter 3.22.2 machine before merge.
+- **Last action:** Executed Phase 2 Plan 01 (snooze state-machine source fix, SNZ-01..05). All 3 tasks autonomous, committed atomically: `67ae5f7` seconds-based snooze duration shared via `_scheduleSnooze(Duration delay)` + `clock.now()` + `Length` `snapLength:1` (SNZ-02); `c70f156` `_resolveDismiss()` (cancelSnooze + canonical `update()`, schedule-agnostic), public async `handleDismiss()` delegator, and max-snooze gate in `snooze()` resolving over-max as a dismiss (SNZ-03/SNZ-04/#457); `3e0c69c` awaited deactivating dismiss in the isolate `stopAlarm` branch (SNZ-01/SNZ-05). One Rule-1 in-scope fix: updated the third `_scheduleSnooze()` caller inside `update()` to pass the remaining duration. `update_alarms.dart` + `alarm_screen.dart` reused unchanged. 13/13 source assertions pass.
+- **Next action:** Plan 02 (wave 2) — author `test/alarm/types/alarm_snooze_test.dart` (SNZ-01..05 regression: fractional 30s snooze under frozen clock, once/dates snooze→dismiss deactivation, over-max→dismiss, `snoozeCount` toJson↔fromJson round-trip) and repoint the `test-apk.yml` analyze list to the three Phase-2 files.
+- **Watch (owed CI/human gates — toolchain absent here, NO push performed):** Plan 02's `flutter test` + scoped `flutter analyze` on `lib/alarm/types/alarm.dart`, `lib/alarm/logic/alarm_isolate.dart`, `lib/alarm/data/alarm_settings_schema.dart` run on Flutter 3.22.2 via CI. Owed dispatch (user-authorized only — both remotes outward-facing): `gh workflow run test-apk.yml --ref <phase-branch>` then `gh run watch`; push the phase branch to trigger `tests.yml`. Plus an on-device snooze→dismiss smoke check (once-alarm dismiss does not reappear; fractional snooze re-rings ~30s; over-max dismisses). Phase-1 gates (`01-02`/`01-03` on-device + l10n/analyze) still owed from the prior phase.
 
 ---
 *State initialized: 2026-05-30*
-*Last updated: 2026-05-30 after executing 01-03-PLAN.md (Tasks 1-2; Task 3 blocking on-device checkpoint pending — 01-02 Task 3 also still pending)*
+*Last updated: 2026-06-02 after executing 02-01-PLAN.md (all 3 tasks autonomous + committed; SNZ-01..05 source-complete; CI/test gates owed via Plan 02 + CI)*
 
 ## Performance Metrics
 
 | Phase | Plan | Duration | Notes |
 |-------|------|----------|-------|
 | Phase 01 P03 | 6min | 2 tasks | 2 files |
+| Phase 02 P01 | 8min | 3 tasks | 3 files |
+
+## Decisions
+
+- [Phase ?]: [02-01] Snooze fixed at source: seconds-based duration shared between _snoozeTime and scheduleSnoozeAlarm; snooze() reads clock.now() (D-B); snapLength:1 on Length slider (D-D).
+- [Phase ?]: [02-01] Single _resolveDismiss() (cancelSnooze + canonical update()) deactivates one-shot AND finished-dates schedules (D-C/#457); over-max snooze resolves as a dismiss (D-A); handleDismiss() kept as a public async delegator (D-E); isolate dismiss branch awaits it. update_alarms.dart + alarm_screen.dart reused unchanged.

@@ -65,7 +65,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Fix the snooze state machine at source: seconds-based fractional duration + clock.now(), max-count gate (over-max resolves as dismiss), schedule-agnostic _resolveDismiss() wired into the isolate dismiss path (SNZ-01..05)
+- [x] 02-01-PLAN.md — Fix the snooze state machine at source: seconds-based fractional duration + clock.now(), max-count gate (over-max resolves as dismiss), schedule-agnostic _resolveDismiss() wired into the isolate dismiss path (SNZ-01..05)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -107,7 +107,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
-| 2. Snooze Reliability | 0/2 | Planned | - |
+| 2. Snooze Reliability | 1/2 | In Progress|  |
 | 3. Date, Volume & FAB High-Value Fixes | 0/0 | Not started | - |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |
 
