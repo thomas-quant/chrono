@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:clock_app/alarm/types/alarm.dart';
 import 'package:clock_app/alarm/types/schedules/dates_alarm_schedule.dart';
 import 'package:clock_app/common/types/time.dart';
+import 'package:clock_app/settings/types/setting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Regression suite locking in the Plan 02-01 snooze state-machine fixes
@@ -97,7 +98,14 @@ void main() {
       () async {
         // Switch to a DatesAlarmSchedule whose only date is in the past, so
         // the schedule finishes when re-evaluated by update() on dismiss.
-        alarm.setSettingWithoutNotify("Type", DatesAlarmSchedule);
+        // "Type" is a SelectSetting<Type> backed by an int index (SelectSetting
+        // extends Setting<int>), so it must be set by the option *index* — the
+        // .value getter resolves the index back to the Type. Passing the Type
+        // directly throws "_Type is not a subtype of int".
+        final typeSetting =
+            alarm.settings.getSetting("Type") as SelectSetting<Type>;
+        alarm.setSettingWithoutNotify(
+            "Type", typeSetting.getIndexOfValue(DatesAlarmSchedule));
         final pastDate = DateTime(2000, 1, 1, 2, 30);
         alarm.setSettingWithoutNotify("Dates", [pastDate]);
 
@@ -121,7 +129,9 @@ void main() {
         // resolves to disabled — matching production, where the alarm has
         // already fired by the time the max-snooze gate trips.
         alarm = _firedOnceAlarm(alarm);
-        alarm.setSettingWithoutNotify("Max Snoozes", 2);
+        // "Max Snoozes" is a SliderSetting (Setting<double>): pass a double, not
+        // an int ("int is not a subtype of double").
+        alarm.setSettingWithoutNotify("Max Snoozes", 2.0);
 
         await alarm.snooze(); // count -> 1
         expect(alarm.snoozeCount, 1);
