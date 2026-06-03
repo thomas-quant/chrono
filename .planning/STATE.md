@@ -2,14 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-last_updated: "2026-06-02T19:52:32.410Z"
+status: ready_to_plan
+last_updated: 2026-06-03T01:42:19.478Z
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 5
   completed_plans: 5
   percent: 50
+stopped_at: Phase 02 complete (2/2) — ready to discuss Phase 3
 ---
 
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
@@ -17,19 +18,19 @@ progress:
 ## Project Reference
 
 - **Core value:** The alarm must reliably ring and reliably stop — reliability before any new feature.
-- **Current focus:** Phase 02 — snooze-reliability
+- **Current focus:** Phase 3 — date, volume & fab high value fixes
 - **Type:** Brownfield (bug-fix + feature work on an existing, mature Flutter/Android alarm app).
 - **Key docs:** `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/research/`, `.planning/codebase/`.
 
 ## Current Position
 
 Phase: 02 (snooze-reliability) — READY FOR VERIFICATION
-Plan: 2 of 2 (both plans code-complete & committed)
+Plan: Not started
 Next: Phase 2 verification, then Phase 3 (Date, Volume & FAB) — not yet planned
 
-- **Phase:** 1 of 4 closed; Phase 2 of 4 code-complete (both plans committed), pending verification.
+- **Phase:** 3 of 4 (date, volume & fab high value fixes)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
-- **Status:** Phase complete (code) — ready for verification
+- **Status:** Ready to plan
 - **Progress:** [██████████] 100%
 
 ## Phase Map

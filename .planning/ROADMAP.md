@@ -107,7 +107,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
-| 2. Snooze Reliability | 2/2 | Complete   | 2026-06-02 |
+| 2. Snooze Reliability | 2/2 | Complete    | 2026-06-03 |
 | 3. Date, Volume & FAB High-Value Fixes | 0/0 | Not started | - |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |
 
