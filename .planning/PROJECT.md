@@ -113,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-30 after initialization*
+*Last updated: 2026-06-03 — Phase 2 (Snooze Reliability) complete: SNZ-01..05 fixed at source and locked by a CI-green regression suite (tests.yml: 176 passed); on-device smoke is the one remaining accepted gate. 2/4 phases done.*
