@@ -17,6 +17,17 @@ Chrono is a feature-rich, open-source (vicolo-dev) alarm, timer, stopwatch, and 
 - **Distribution**: Google Play (AAB) + GitHub Releases (APK) + F-Droid. F-Droid forbids proprietary blobs — the scanner library MUST be FOSS-clean (verified exit criterion: zero `mlkit`/`gms`/`play-services` in the Gradle graph).
 <!-- GSD:project-end -->
 
+<!-- TESTING POLICY (hand-maintained — intentionally OUTSIDE GSD-managed blocks; do not let regeneration clobber it) -->
+## Testing Policy — default Flutter/Dart testing to GitHub Actions
+
+**Maximize automated testing in CI, and design code so more of it can run there.** For every phase and every plan, route all testing that *can* run in `flutter test` onto GitHub Actions — not just trivial unit tests.
+
+- **What CI runs today:** `tests.yml` → `flutter test --coverage` on a headless `ubuntu-latest` runner (no emulator). This executes **unit tests AND headless widget tests** (`WidgetTester` / `pumpWidget`). `test-apk.yml` additionally runs `flutter analyze` and builds a sideloadable dev APK.
+- **Default behavior:** author CI-runnable tests for every fix/feature. When the real behavior is awkward to test directly (audio playback, isolate scheduling, full-screen layout), **extract a pure, dependency-free seam** (a controller/function with an injectable clock/Timer and callbacks) and unit-test that seam in CI. Prefer testability-by-design over "untestable — verify on device."
+- **On-device / instrumented testing is a *complementary* gate, never a substitute** for what CI can run. Reserve human/on-device checks only for what CI genuinely cannot do: real alarm firing, real `just_audio` playback, lock-screen, reboot, true cross-OEM pixel layout. There is currently **no emulator / `integration_test` job**; adding one (`reactivecircus/android-emulator-runner`) is a separate, deferrable infra decision — propose it explicitly rather than assuming it.
+- **Local toolchain is absent** (`flutter`/`dart` are not installed in the dev environment): tests are *authored in-repo* and confirmed **green via CI** — never reported as locally passing when they were not run. CI is the authoritative gate; `flutter analyze` and `flutter gen-l10n` are likewise CI/human gates.
+<!-- END TESTING POLICY -->
+
 <!-- GSD:stack-start source:codebase/STACK.md -->
 ## Technology Stack
 
