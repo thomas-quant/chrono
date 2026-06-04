@@ -23,9 +23,19 @@ progress:
 
 ## Current Position
 
-Phase: 02 (snooze-reliability) — READY FOR VERIFICATION
+Phase: 03 (date-volume-fab-high-value-fixes) — CONTEXT GATHERED, READY TO PLAN
 Plan: Not started
-Next: Phase 2 verification, then Phase 3 (Date, Volume & FAB) — not yet planned
+Next: Plan Phase 3 → `/gsd-plan-phase 3`
+Resume file: `.planning/phases/03-date-volume-fab-high-value-fixes/03-CONTEXT.md`
+
+**Phase 3 discussion outcome (2026-06-05):** Date → store as local date-only `YYYY-MM-DD`, auto-correct
+legacy epoch on load (contingent on confirming `table_calendar` midnight-vs-noon UTC). Volume/FAB →
+**reimplement #467/#466 independently, sole credit (no contributor attribution)** — DEVIATES from
+PR-01/PR-02 + ROADMAP success-criterion #4 ("credit the contributor"); reword those at next transition.
+FAB → shared bottom-clearance fix at the list/FAB layer (all ~12 screens). Tests → all three get CI
+coverage (date unit, volume-cancel via extracted ramp controller, narrow FAB widget test). **New project
+policy:** `CLAUDE.md` now defaults all CI-runnable testing (unit + headless widget) to GitHub Actions for
+every phase/plan.
 
 - **Phase:** 3 of 4 (date, volume & fab high value fixes)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
