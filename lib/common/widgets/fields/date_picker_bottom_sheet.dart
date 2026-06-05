@@ -143,6 +143,12 @@ class _DatePickerBottomSheetState extends State<DatePickerBottomSheet> {
                                   isSameDay(selectedDate, date));
                         },
                         onDaySelected: (newSelectedDate, focusedDate) {
+                          // table_calendar hands a DateTime.utc(y,m,d) (midnight
+                          // UTC). Normalize to a LOCAL calendar date here, at the
+                          // source, so the value stored in _selectedDates and
+                          // emitted via onChanged carries no time/TZ component.
+                          newSelectedDate = DateTime(newSelectedDate.year,
+                              newSelectedDate.month, newSelectedDate.day);
                           setState(() {
                             _focusedDate = newSelectedDate;
 
@@ -173,6 +179,17 @@ class _DatePickerBottomSheetState extends State<DatePickerBottomSheet> {
                         rangeStartDay: _rangeStartDate,
                         rangeEndDay: _rangeEndDate,
                         onRangeSelected: (startDate, endDate, focusedDay) {
+                          // Normalize the raw table_calendar UTC days to LOCAL
+                          // calendar dates before they enter _selectedDates, so
+                          // RangeAlarmSchedule receives time/TZ-free dates.
+                          if (startDate != null) {
+                            startDate = DateTime(startDate.year, startDate.month,
+                                startDate.day);
+                          }
+                          if (endDate != null) {
+                            endDate =
+                                DateTime(endDate.year, endDate.month, endDate.day);
+                          }
                           setState(() {
                             _focusedDate = startDate ?? focusedDay;
 
@@ -189,7 +206,11 @@ class _DatePickerBottomSheetState extends State<DatePickerBottomSheet> {
                               if (startDate != null && endDate != null) {
                                 DateTime date = startDate;
                                 while (date.isBefore(endDate)) {
-                                  _selectedDates.add(date);
+                                  // Re-normalize each step: adding a 24h Duration
+                                  // to a local midnight can drift across a DST
+                                  // boundary, so rebuild a clean local DateTime(y,m,d).
+                                  _selectedDates.add(
+                                      DateTime(date.year, date.month, date.day));
                                   date = date.add(const Duration(days: 1));
                                 }
                                 _selectedDates.add(endDate);
