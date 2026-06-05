@@ -206,12 +206,17 @@ class _DatePickerBottomSheetState extends State<DatePickerBottomSheet> {
                               if (startDate != null && endDate != null) {
                                 DateTime date = startDate;
                                 while (date.isBefore(endDate)) {
-                                  // Re-normalize each step: adding a 24h Duration
-                                  // to a local midnight can drift across a DST
-                                  // boundary, so rebuild a clean local DateTime(y,m,d).
                                   _selectedDates.add(
                                       DateTime(date.year, date.month, date.day));
-                                  date = date.add(const Duration(days: 1));
+                                  // Advance the cursor by rebuilding a calendar
+                                  // date, not by adding a fixed 24h Duration.
+                                  // Across a DST boundary a 24h add overshoots
+                                  // (spring-forward, 23h local) or undershoots
+                                  // (fall-back, 25h) local midnight, drifting the
+                                  // cursor so `isBefore(endDate)` can cross one
+                                  // iteration early/late and drop or duplicate a
+                                  // boundary day. A `day + 1` rebuild is DST-safe.
+                                  date = DateTime(date.year, date.month, date.day + 1);
                                 }
                                 _selectedDates.add(endDate);
                               }
