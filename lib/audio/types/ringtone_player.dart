@@ -4,6 +4,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:clock_app/alarm/types/alarm.dart';
 import 'package:clock_app/audio/logic/ringtones.dart';
 import 'package:clock_app/audio/types/ringtone_manager.dart';
+import 'package:clock_app/audio/types/volume_ramp_controller.dart';
 import 'package:clock_app/developer/logic/logger.dart';
 import 'package:clock_app/timer/types/timer.dart';
 import 'package:just_audio/just_audio.dart';
@@ -17,7 +18,12 @@ class RingtonePlayer {
   static AudioPlayer? _mediaPlayer;
   static AudioPlayer? activePlayer;
   static bool _vibratorIsAvailable = false;
-  static bool _stopRisingVolume = false;
+
+  // The rising-volume ramp. Owned here as a single cancellable controller; its
+  // injected callback applies the volume to whichever player is active. cancel()
+  // is the ONLY ramp-stop signal — a plain setVolume() must not kill the ramp.
+  static final VolumeRampController _rampController =
+      VolumeRampController((volume) => activePlayer?.setVolume(volume));
 
   static Future<void> initialize() async {
     _alarmPlayer ??= AudioPlayer(handleInterruptions: true);
@@ -81,7 +87,9 @@ class RingtonePlayer {
 
   static Future<void> setVolume(double volume) async {
     logger.t("Setting volume to $volume");
-    _stopRisingVolume = true;
+    // A plain volume write does NOT cancel the ramp (decoupled). The live
+    // alarm-volume port lowers audio while a dismiss task is solved; that must
+    // not silently kill the rising-volume ramp. cancel() is the only stop.
     await activePlayer?.setVolume(volume);
   }
 
@@ -95,7 +103,9 @@ class RingtonePlayer {
     // double duration = double.infinity,
   }) async {
     try {
-      _stopRisingVolume = false;
+      // Cancel any prior ramp on re-entry before starting a new one (also
+      // guarded by start()'s own leading cancel(), kept here for clarity).
+      _rampController.cancel();
 
       RingtoneManager.lastPlayedRingtoneUri = ringtoneUri;
       if (_vibratorIsAvailable && vibrate) {
@@ -115,18 +125,12 @@ class RingtonePlayer {
       }
       await setVolume(volume);
 
-      // Gradually increase the volume
+      // Gradually increase the volume via the cancellable ramp controller.
       if (secondsToMaxVolume > 0) {
-        for (int i = 0; i <= 10; i++) {
-          Future.delayed(
-            Duration(milliseconds: i * (secondsToMaxVolume * 100)),
-            () {
-              if (!_stopRisingVolume) {
-                setVolume((i / 10) * volume);
-              }
-            },
-          );
-        }
+        _rampController.start(
+          targetVolume: volume,
+          duration: Duration(seconds: secondsToMaxVolume),
+        );
       }
       // Future.delayed(
       //   Duration(seconds: duration.toInt()),
@@ -143,6 +147,7 @@ class RingtonePlayer {
   }
 
   static Future<void> pause() async {
+    _rampController.cancel();
     await activePlayer?.pause();
     if (_vibratorIsAvailable) {
       await Vibration.cancel();
@@ -150,6 +155,7 @@ class RingtonePlayer {
   }
 
   static Future<void> stop() async {
+    _rampController.cancel();
     await activePlayer?.stop();
     final session = await AudioSession.instance;
     await session.setActive(false);
@@ -157,6 +163,5 @@ class RingtonePlayer {
       await Vibration.cancel();
     }
     RingtoneManager.lastPlayedRingtoneUri = "";
-    _stopRisingVolume = false;
   }
 }
