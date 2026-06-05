@@ -117,6 +117,51 @@ void main() {
     );
 
     test(
+      'WR-05 validation: an out-of-range YYYY-MM-DD string is salvaged to a '
+      'plausible date instead of silently rolling over',
+      () {
+        final setting = _dateSetting([]);
+
+        // '2026-13-40' parses without throwing and a raw DateTime(2026, 13, 40)
+        // would silently roll over (month 13 -> next Jan, day 40 -> overflow).
+        // With range validation it must be rejected and salvaged, never loaded
+        // as a plausible-but-wrong date.
+        final now = DateTime.now();
+        expect(
+          () => setting.loadValueFromJson(['2026-13-40']),
+          returnsNormally,
+        );
+        final salvaged = _values(setting).single;
+        // Salvaged to today's date-only (the BOOT-04 fallback), NOT to the
+        // rolled-over 2027-02-09 that an unvalidated DateTime would produce.
+        expect(salvaged.year, now.year);
+        expect(salvaged.month, now.month);
+        expect(salvaged.day, now.day);
+      },
+    );
+
+    test(
+      'WR-05 validation: a YYYY-MM-DD string with trailing junk is salvaged, '
+      'not silently truncated to its first three parts',
+      () {
+        final setting = _dateSetting([]);
+
+        // '2026-06-07-extra' splits into 4 parts; the old code parsed only the
+        // first three and ignored the tail. With the length check it must be
+        // rejected and salvaged rather than silently accepted as 2026-06-07.
+        final now = DateTime.now();
+        expect(
+          () => setting.loadValueFromJson(['2026-06-07-extra']),
+          returnsNormally,
+        );
+        final salvaged = _values(setting).single;
+        expect(salvaged.year, now.year);
+        expect(salvaged.month, now.month);
+        expect(salvaged.day, now.day);
+      },
+    );
+
+    test(
       'DATE-02 range safety: RangeAlarmSchedule produces the same finish '
       'boundary before and after a date-only round-trip (Pitfall 2)',
       () async {

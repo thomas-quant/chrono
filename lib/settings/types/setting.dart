@@ -975,12 +975,24 @@ class DateTimeSetting extends Setting<List<DateTime>> {
       try {
         if (e is String) {
           // New format: a date-only `YYYY-MM-DD` string -> local DateTime(y,m,d).
+          // Validate the shape and ranges BEFORE constructing the DateTime.
+          // Without this, a corrupt string like '2026-13-40' parses fine and
+          // DateTime silently rolls over (month 13 -> next Jan, day 40 ->
+          // overflows the month), loading a plausible-but-wrong date instead of
+          // salvaging to today. A trailing-junk string ('2026-06-07-extra')
+          // would also silently parse its first three parts. Throwing on bad
+          // input routes it through the catch-block salvage path below.
           final parts = e.split('-');
-          return DateTime(
-            int.parse(parts[0]),
-            int.parse(parts[1]),
-            int.parse(parts[2]),
-          );
+          if (parts.length != 3) {
+            throw const FormatException('date must have exactly 3 parts');
+          }
+          final year = int.parse(parts[0]);
+          final month = int.parse(parts[1]);
+          final day = int.parse(parts[2]);
+          if (month < 1 || month > 12 || day < 1 || day > 31) {
+            throw const FormatException('date month/day out of range');
+          }
+          return DateTime(year, month, day);
         }
         if (e is int) {
           // Legacy format: an epoch instant written by the old code. table_calendar
