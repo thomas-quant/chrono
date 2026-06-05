@@ -10,6 +10,7 @@ import 'package:clock_app/common/widgets/list/list_item_card.dart';
 import 'package:clock_app/settings/data/general_settings_schema.dart';
 import 'package:clock_app/settings/data/settings_schema.dart';
 import 'package:clock_app/settings/types/setting.dart';
+import 'package:clock_app/theme/types/theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
@@ -339,6 +340,27 @@ class _CustomListViewState<Item extends ListItem>
     ThemeData theme = Theme.of(context);
     ColorScheme colorScheme = theme.colorScheme;
     TextTheme textTheme = theme.textTheme;
+    ThemeSettingExtension themeSettings =
+        theme.extension<ThemeSettingExtension>()!;
+
+    // The FAB is a custom `Positioned` overlay (lib/common/widgets/fab.dart),
+    // not a Material `Scaffold.floatingActionButton`, so the scrollable does not
+    // auto-reserve space for it and the last item / menu button gets occluded.
+    // Reserve a bottom inset that clears the FAB, derived (not guessed) from the
+    // FAB's own geometry and the getSnackbar clearance precedent:
+    //   8  -> original list inset (was EdgeInsets.symmetric(vertical: 8))
+    //   56 -> FAB tap-target extent: 16 + 24 + 16 (fab.dart:84 EdgeInsets.all(16)
+    //         around the 24px icon at fab.dart:88, size: 1)
+    //   16 -> gap to the FAB, matching fab.dart:74's `16 +` right offset and the
+    //         `64 + 16` FAB gap in snackbar.dart:57,59 (getSnackbar)
+    //   +20 -> Material-style extra offset when useMaterialStyle, matching the
+    //         FAB's own `widget.bottomPadding + 20` at fab.dart:67-69 (and the
+    //         `bottom += 20` material rule in snackbar.dart:67-69) so the inset
+    //         clears the FAB's raised bottom in Material style.
+    // SafeArea already wraps the body (nav_scaffold.dart:252) and landscape has
+    // no bottom nav bar (nav_scaffold.dart:230), so no nav-bar height is added.
+    final double fabBottomClearance =
+        8 + 56 + 16 + (themeSettings.useMaterialStyle ? 20 : 0);
 
     if (_selectedSortIndex > widget.sortOptions.length) {
       _updateCurrentList();
@@ -387,8 +409,12 @@ class _CustomListViewState<Item extends ListItem>
                 proxyDecorator: (widget, index, animation) =>
                     reorderableListDecorator(context, widget),
                 items: currentList,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 8,
+                  bottom: fabBottomClearance,
+                ),
                 isSameItem: (a, b) => a.id == b.id,
                 scrollDirection: Axis.vertical,
                 itemBuilder: _getItemBuilder(),
