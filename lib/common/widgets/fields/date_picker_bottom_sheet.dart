@@ -190,6 +190,18 @@ class _DatePickerBottomSheetState extends State<DatePickerBottomSheet> {
                             endDate =
                                 DateTime(endDate.year, endDate.month, endDate.day);
                           }
+                          // Normalize order before filling. A reversed range
+                          // (endDate before startDate — possible via unordered
+                          // programmatic initialDates) would otherwise skip the
+                          // fill loop and append only endDate, silently producing
+                          // a 1-element "range" with _isSaveEnabled still true.
+                          if (startDate != null &&
+                              endDate != null &&
+                              endDate.isBefore(startDate)) {
+                            final DateTime swap = startDate;
+                            startDate = endDate;
+                            endDate = swap;
+                          }
                           setState(() {
                             _focusedDate = startDate ?? focusedDay;
 
