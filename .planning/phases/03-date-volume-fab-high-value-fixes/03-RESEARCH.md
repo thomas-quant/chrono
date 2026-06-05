@@ -388,7 +388,7 @@ expect(alarm.snoozeTime, fixedNow.add(const Duration(seconds: 30))); // assert o
 
 **Note:** The two items that were explicitly flagged "contingent on research" in CONTEXT.md (table_calendar normalization; FAB central injection point) are **NOT** in this log — they are now `[VERIFIED]` against authoritative source and resolved, not assumed.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should a live user volume-change during ring retarget the ramp ceiling, or just set the player volume while the ramp continues to its original target?**
    - What we know: The current behavior (kill the ramp) is the bug. VOL-01 only requires the ramp to climb to max and stop cleanly on dismiss/snooze.

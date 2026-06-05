@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-06-04T23:52:53.089Z"
+status: executing
+last_updated: "2026-06-05T00:32:04.699Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 5
+  total_plans: 8
   completed_plans: 5
   percent: 50
 ---
@@ -39,7 +39,7 @@ every phase/plan.
 
 - **Phase:** 3 of 4 (date, volume & fab high value fixes)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
-- **Status:** Ready to plan
+- **Status:** Ready to execute
 - **Progress:** [██████████] 100%
 
 ## Phase Map
