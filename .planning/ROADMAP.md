@@ -106,7 +106,26 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
   4. The alarm can never become un-dismissable: an escape-hatch fallback is ON by default (a plain dismiss after a configurable failed-attempt and/or elapsed-time threshold), it also triggers on camera-permission-denied and camera-unavailable, it is screen-reader reachable, camera permission is requested at setup (never at fire time) with `CAMERA` + `uses-feature required="false"` in the manifest, and the camera is released on every exit path (no stuck privacy indicator).
   5. A torch/flashlight toggle is available in the scanner for dark rooms, and all new user-facing strings are localized (English baseline; other locales via Weblate).
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+**Wave 1** *(parallel — build gate + pure seams have no file overlap)*
+
+- [ ] 04-01-PLAN.md — Build enablement gate: flutter_zxing 2.2.1 exact pin + minSdk 21→23 + CAMERA/uses-feature manifest + BUILD-02 zero-ML-Kit CI graph gate (BUILD-01, BUILD-02, SCAN-08)
+- [ ] 04-02-PLAN.md — Pure CI-testable seams: normalizeCode/codesMatch + EscapeHatchController (injectable clock/Timer) + headless tests (SCAN-03, SCAN-06, SCAN-07)
+
+**Wave 2** *(blocked on Wave 1; lock-screen spike + ring-side code run in parallel on disjoint files)*
+
+- [ ] 04-03-PLAN.md — Lock-screen camera de-risk spike (ON-DEVICE, criterion #1): throwaway ReaderWidget on the real over-lock ring path across ≥2 OEMs → documented go/no-go verdict, then revert (D-LOCK-SPIKE-SCOPE/NOGO-UX/SHIP)
+- [ ] 04-04-PLAN.md — Scan task type + schema + ScanTask ring widget + all ARB strings + AlarmTask(scan) JSON round-trip test (SCAN-01, SCAN-03/04/05/06/07/09/11/12)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 04-05-PLAN.md — Registration UI: inline "Scan to register" card + register screen + get_setting_widget dispatch + setup-time camera permission/deep-link + remove print payload leak (SCAN-02, SCAN-08, SCAN-10)
+
+**Wave 4** *(blocked on Waves 2–3)*
+
+- [ ] 04-06-PLAN.md — On-device end-to-end verification: real ring scan, wrong-scan+escape, torch (SCAN-09), camera-release/no stuck indicator (SCAN-11), no-go OEM degradation
+
 **UI hint**: yes
 
 ## Progress
