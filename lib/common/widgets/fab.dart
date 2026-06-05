@@ -5,6 +5,22 @@ import 'package:clock_app/settings/types/setting.dart';
 import 'package:clock_app/theme/types/theme_extension.dart';
 import 'package:flutter/material.dart';
 
+// Shared FAB geometry constants. These are the single source of truth for the
+// FAB's tap-target extent so consumers that must reserve space for the FAB
+// (e.g. CustomListView's bottom inset) derive the same value the FAB lays out
+// with — they no longer hardcode magic numbers that silently desync if the FAB
+// padding/icon/offset ever changes.
+//
+//   fabIconPadding * 2 + fabIconSize == the FAB tap-target extent (default size)
+//   fabMaterialExtraOffset           == extra bottom offset in Material style
+const double fabIconPadding = 16;
+const double fabIconSize = 24;
+const double fabMaterialExtraOffset = 20;
+
+/// The FAB's tap-target extent at its default [FAB.size] of 1
+/// (padding on both sides plus the icon): 16 + 24 + 16 = 56.
+const double fabExtent = fabIconPadding * 2 + fabIconSize;
+
 enum FabPosition { bottomLeft, bottomRight }
 
 class FAB extends StatefulWidget {
@@ -65,7 +81,7 @@ class _FABState extends State<FAB> {
         : widget.position;
 
     double bottomPadding = themeSettings.useMaterialStyle
-        ? widget.bottomPadding + 20
+        ? widget.bottomPadding + fabMaterialExtraOffset
         : widget.bottomPadding;
 
     return Positioned(
@@ -81,11 +97,11 @@ class _FABState extends State<FAB> {
         color: colorScheme.primary,
         onTap: widget.onPressed,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(fabIconPadding),
           child: Icon(
             widget.icon,
             color: colorScheme.onPrimary,
-            size: 24 * widget.size,
+            size: fabIconSize * widget.size,
           ),
         ),
       ),

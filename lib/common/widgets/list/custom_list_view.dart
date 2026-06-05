@@ -2,6 +2,7 @@ import 'package:clock_app/common/types/list_controller.dart';
 import 'package:clock_app/common/types/list_filter.dart';
 import 'package:clock_app/common/types/list_item.dart';
 import 'package:clock_app/common/utils/reorderable_list_decorator.dart';
+import 'package:clock_app/common/widgets/fab.dart';
 import 'package:clock_app/common/widgets/list/animated_reorderable_list/animated_reorderable_listview.dart';
 import 'package:clock_app/common/widgets/list/animated_reorderable_list/animation/fade_in.dart';
 import 'package:clock_app/common/widgets/list/delete_alert_dialogue.dart';
@@ -347,20 +348,21 @@ class _CustomListViewState<Item extends ListItem>
     // not a Material `Scaffold.floatingActionButton`, so the scrollable does not
     // auto-reserve space for it and the last item / menu button gets occluded.
     // Reserve a bottom inset that clears the FAB, derived (not guessed) from the
-    // FAB's own geometry and the getSnackbar clearance precedent:
-    //   8  -> original list inset (was EdgeInsets.symmetric(vertical: 8))
-    //   56 -> FAB tap-target extent: 16 + 24 + 16 (fab.dart:84 EdgeInsets.all(16)
-    //         around the 24px icon at fab.dart:88, size: 1)
-    //   16 -> gap to the FAB, matching fab.dart:74's `16 +` right offset and the
-    //         `64 + 16` FAB gap in snackbar.dart:57,59 (getSnackbar)
-    //   +20 -> Material-style extra offset when useMaterialStyle, matching the
-    //         FAB's own `widget.bottomPadding + 20` at fab.dart:67-69 (and the
-    //         `bottom += 20` material rule in snackbar.dart:67-69) so the inset
-    //         clears the FAB's raised bottom in Material style.
+    // FAB's own geometry constants exported by fab.dart — the single source of
+    // truth — so this inset can never silently desync from the FAB layout:
+    //   8                      -> original list inset (was vertical: 8)
+    //   fabExtent              -> FAB tap-target extent (fabIconPadding * 2 +
+    //                             fabIconSize) from fab.dart
+    //   fabIconPadding         -> gap to the FAB (matches fab.dart's 16 offset)
+    //   fabMaterialExtraOffset -> Material-style extra offset when
+    //                             useMaterialStyle, matching the FAB's own
+    //                             `bottomPadding + fabMaterialExtraOffset`.
     // SafeArea already wraps the body (nav_scaffold.dart:252) and landscape has
     // no bottom nav bar (nav_scaffold.dart:230), so no nav-bar height is added.
-    final double fabBottomClearance =
-        8 + 56 + 16 + (themeSettings.useMaterialStyle ? 20 : 0);
+    final double fabBottomClearance = 8 +
+        fabExtent +
+        fabIconPadding +
+        (themeSettings.useMaterialStyle ? fabMaterialExtraOffset : 0);
 
     if (_selectedSortIndex > widget.sortOptions.length) {
       _updateCurrentList();

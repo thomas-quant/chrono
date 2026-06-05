@@ -11,23 +11,18 @@
 // bottom inset on the list's `SliverPadding` clears the FAB extent. It does NOT
 // boot the full App/NavScaffold and touches no real storage or audio.
 //
-// FAB extent reference (must match custom_list_view.dart's derivation):
-//   56  -> FAB tap target: 16 + 24 + 16 (fab.dart:84 EdgeInsets.all(16) around
-//          the 24px icon at fab.dart:88)
-//   +20 -> Material-style extra offset (fab.dart:67-69), applied when
-//          useMaterialStyle is true.
+// FAB extent reference: this test imports the SHARED geometry constants from
+// fab.dart (fabExtent, fabMaterialExtraOffset) rather than re-hardcoding the
+// magic numbers, so it catches a fab.dart drift instead of silently agreeing
+// with a stale literal in custom_list_view.dart.
 
 import 'package:clock_app/common/types/list_controller.dart';
 import 'package:clock_app/common/types/list_item.dart';
+import 'package:clock_app/common/widgets/fab.dart';
 import 'package:clock_app/common/widgets/list/custom_list_view.dart';
 import 'package:clock_app/theme/types/theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-// FAB tap-target extent the inset must clear (16 + 24 + 16 from fab.dart:84,88).
-const double fabExtent = 56;
-// Material-style extra bottom offset (fab.dart:67-69).
-const double materialExtra = 20;
 
 void main() {
   // Required so the statically-constructed appSettings schema that
@@ -50,9 +45,9 @@ void main() {
       await _pumpList(tester, useMaterialStyle: true);
 
       final double bottom = _resolvedListBottomInset(tester);
-      // In Material style the FAB sits 20px higher (fab.dart:67-69), so the
+      // In Material style the FAB sits higher by fabMaterialExtraOffset, so the
       // inset must clear the FAB extent plus that extra offset.
-      expect(bottom, greaterThanOrEqualTo(fabExtent + materialExtra));
+      expect(bottom, greaterThanOrEqualTo(fabExtent + fabMaterialExtraOffset));
     });
 
     testWidgets('horizontal 16 and top 8 are preserved',
