@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-06-05T03:33:22.346Z"
+status: executing
+last_updated: "2026-06-05T23:34:26.071Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 8
+  total_plans: 14
   completed_plans: 8
-  percent: 75
+  percent: 57
 ---
 
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
@@ -26,7 +26,7 @@ progress:
 Phase: 03 (date-volume-fab-high-value-fixes) — EXECUTING
 Plan: Not started
 Next: Plan Phase 3 → `/gsd-plan-phase 3`
-Resume file: .planning/phases/04-qr-barcode-scan-to-dismiss-task/04-CONTEXT.md
+Resume file: .planning/phases/04-qr-barcode-scan-to-dismiss-task/04-UI-SPEC.md
 
 **Phase 3 discussion outcome (2026-06-05):** Date → store as local date-only `YYYY-MM-DD`, auto-correct
 legacy epoch on load (contingent on confirming `table_calendar` midnight-vs-noon UTC). Volume/FAB →
@@ -39,7 +39,7 @@ every phase/plan.
 
 - **Phase:** 4 of 4 (qr/barcode scan to dismiss task)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
-- **Status:** Ready to plan
+- **Status:** Ready to execute
 - **Progress:** [██████████] 100%
 
 ## Phase Map
