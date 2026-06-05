@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-05T00:48:58.816Z"
+last_updated: "2026-06-05T00:55:25.316Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 50
 ---
 
@@ -24,7 +24,7 @@ progress:
 ## Current Position
 
 Phase: 03 (date-volume-fab-high-value-fixes) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Next: Plan Phase 3 → `/gsd-plan-phase 3`
 Resume file: None
 
@@ -40,7 +40,7 @@ every phase/plan.
 - **Phase:** 3 of 4 (date, volume & fab high value fixes)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
 - **Status:** Ready to execute
-- **Progress:** [████████░░] 75%
+- **Progress:** [█████████░] 88%
 
 ## Phase Map
 
@@ -124,6 +124,7 @@ every phase/plan.
 | Phase 02 P01 | 8min | 3 tasks | 3 files |
 | Phase 02 P02 | ~7min | 2 tasks | 2 files |
 | Phase 3 P1 | 4min | 3 tasks | 3 files |
+| Phase 03 P02 | 7min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -132,3 +133,5 @@ every phase/plan.
 - [Phase ?]: [02-02] Authored alarm_snooze_test.dart (SNZ-01..05 regression: exact now+30s under withClock from Plan-01 clock.now(); once+finished-dates snooze->dismiss deactivation #457; over-max->dismiss; snoozeCount toJson<->fromJson). Repointed test-apk.yml analyze to the 4 Phase-2 files. No lib/ or pubspec change; flutter test+analyze owed via CI.
 - [Phase ?]: [03-01] Specific-date off-by-one fixed at the serialization root: DateTimeSetting persists date-only YYYY-MM-DD strings (D-DATE-FORMAT); loadValueFromJson reads new Strings as local DateTime(y,m,d) and legacy int epochs via isUtc:true UTC reinterpretation (D-DATE-MIGRATION) so broken alarms self-heal; malformed values salvage not crash (BOOT-04). Picker normalizes table_calendar UTC days to local at onDaySelected/onRangeSelected.
 - [Phase ?]: [03-01] RangeAlarmSchedule proven by test unaffected by the date-only round-trip — finish boundary identical before/after for in-window and elapsed ranges; no range_alarm_schedule.dart change needed.
+- [Phase ?]: [03-02] Rising-volume ramp fixed at root: extracted a pure audio-free VolumeRampController (single owned Timer + injected void Function(double) callback + real cancel()); RingtonePlayer drives it and cancels at stop/pause/_play re-entry. cancel() is the ONLY ramp-stop signal — setVolume no longer kills the ramp (removed _stopRisingVolume). Reimplemented #467 independently, sole credit, no contributor attribution (D-PR-METHOD).
+- [Phase ?]: [03-02] Safe default (research Open Q1, for user to confirm at review): a plain mid-ring setVolume() leaves the ramp running and does NOT retarget the ceiling. Used fake_async (transitive) for CI Timer tests — no new dep. flutter test/analyze owed via CI; on-device audio ramp check is the remaining human gate. PR-01/PR-02/ROADMAP criterion #4 still say 'credit the contributor' — reword at next transition (deferred).

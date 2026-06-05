@@ -28,7 +28,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **DATE-01**: An alarm set for a specific date rings on exactly that calendar date, including after an app restart, regardless of the device's UTC offset (fixes the off-by-one rollback: #340/#455/#472)
 - [x] **DATE-02**: A "specific date" is stored and reloaded as a local calendar date (not an absolute instant), so DST/timezone offsets cannot shift it by a day
-- [ ] **VOL-01**: The rising/gradual volume ramp increases volume up to the configured maximum and stops cleanly when the alarm is dismissed/snoozed (no stray volume bumps after stop; no cross-alarm bleed) (#407/#506)
+- [x] **VOL-01**: The rising/gradual volume ramp increases volume up to the configured maximum and stops cleanly when the alarm is dismissed/snoozed (no stray volume bumps after stop; no cross-alarm bleed) (#407/#506)
 - [ ] **FAB-01**: Floating action buttons no longer cover list items / menu buttons in the alarm and other list screens (#417)
 
 ### Feature — QR/Barcode Scan-to-Dismiss Task
@@ -53,7 +53,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Community PRs (review & merge)
 
-- [ ] **PR-01**: Review and merge (or adapt) PR #467 to satisfy VOL-01, crediting the contributor
+- [x] **PR-01**: Review and merge (or adapt) PR #467 to satisfy VOL-01, crediting the contributor
 - [ ] **PR-02**: Review and merge (or adapt) PR #466 to satisfy FAB-01, crediting the contributor
 
 ## v2 Requirements
@@ -105,9 +105,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SNZ-05 | Phase 2 | Complete |
 | DATE-01 | Phase 3 | Complete |
 | DATE-02 | Phase 3 | Complete |
-| VOL-01 | Phase 3 | Pending |
+| VOL-01 | Phase 3 | Complete |
 | FAB-01 | Phase 3 | Pending |
-| PR-01 | Phase 3 | Pending |
+| PR-01 | Phase 3 | Complete |
 | PR-02 | Phase 3 | Pending |
 | BUILD-01 | Phase 4 | Pending |
 | BUILD-02 | Phase 4 | Pending |
