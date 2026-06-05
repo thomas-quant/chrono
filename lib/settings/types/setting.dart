@@ -4,6 +4,7 @@ import 'package:clock_app/common/types/popup_action.dart';
 import 'package:clock_app/common/utils/json_serialize.dart';
 import 'package:clock_app/common/utils/list.dart';
 import 'package:clock_app/common/utils/list_item.dart';
+import 'package:clock_app/developer/logic/logger.dart';
 import 'package:clock_app/settings/types/setting_enable_condition.dart';
 import 'package:clock_app/settings/types/setting_item.dart';
 import 'package:clock_app/settings/utils/description.dart';
@@ -955,15 +956,55 @@ class DateTimeSetting extends Setting<List<DateTime>> {
 
   @override
   dynamic valueToJson() {
-    return _value.map((e) => e.millisecondsSinceEpoch).toList();
+    // Persist a specific date as a date-only `YYYY-MM-DD` string (no time,
+    // offset, or `Z`/`T` component). Storing an absolute epoch instant was the
+    // DATE-01/02 off-by-one root cause: a calendar day round-tripped through an
+    // instant shifts by the device UTC offset between save and load.
+    return _value
+        .map((e) =>
+            '${e.year.toString().padLeft(4, '0')}-'
+            '${e.month.toString().padLeft(2, '0')}-'
+            '${e.day.toString().padLeft(2, '0')}')
+        .toList();
   }
 
   @override
   void loadValueFromJson(dynamic value) {
     if (value == null) return;
-    _value = (value as List)
-        .map((e) => DateTime.fromMillisecondsSinceEpoch(e))
-        .toList();
+    _value = (value as List).map<DateTime>((e) {
+      try {
+        if (e is String) {
+          // New format: a date-only `YYYY-MM-DD` string -> local DateTime(y,m,d).
+          final parts = e.split('-');
+          return DateTime(
+            int.parse(parts[0]),
+            int.parse(parts[1]),
+            int.parse(parts[2]),
+          );
+        }
+        if (e is int) {
+          // Legacy format: an epoch instant written by the old code. table_calendar
+          // stored the picked day as midnight-UTC, so read the epoch in UTC and
+          // rebuild a LOCAL DateTime(y,m,d) to recover the originally-picked
+          // calendar day (D-DATE-MIGRATION). Reading it in local time here would
+          // re-apply the exact off-by-one we are fixing.
+          final utc = DateTime.fromMillisecondsSinceEpoch(e, isUtc: true);
+          logger.i(
+              "Migrated legacy epoch date to date-only: ${utc.year}-${utc.month}-${utc.day}");
+          return DateTime(utc.year, utc.month, utc.day);
+        }
+        // Unknown element type — salvage rather than crash the whole list.
+        logger.e("Unexpected DateTimeSetting element type: ${e.runtimeType}");
+        final now = DateTime.now();
+        return DateTime(now.year, now.month, now.day);
+      } catch (err) {
+        // A corrupt/malformed date must never lose the whole alarm list
+        // (Phase-1 BOOT-04 salvage principle). Fall back to today's date-only.
+        logger.e("Failed to parse DateTimeSetting value '$e': $err");
+        final now = DateTime.now();
+        return DateTime(now.year, now.month, now.day);
+      }
+    }).toList();
   }
 
   void addDateTime(BuildContext context, DateTime dateTime) {
