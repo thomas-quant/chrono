@@ -81,9 +81,16 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
   1. An alarm set for a specific date rings on exactly that calendar date — including after an app restart and regardless of the device's UTC offset — because the date is stored and reloaded as a local calendar date, not an absolute instant.
   2. The rising/gradual volume ramp climbs to the configured maximum and then stops cleanly the instant the alarm is dismissed or snoozed — no stray volume bumps afterward and no bleed into a second alarm.
   3. Floating action buttons no longer cover list items or menu buttons on the alarm and other list screens.
-  4. Community PRs #467 (rising volume → VOL-01) and #466 (FAB → FAB-01) are reviewed, merged or adapted, and credited to their contributors.
+  4. Community PRs #467 (rising volume → VOL-01) and #466 (FAB → FAB-01) are reviewed, merged or adapted, and credited to their contributors. *(⚠ REWORD AT NEXT /gsd-transition: locked decision D-PR-METHOD inverted this — the volume/FAB fixes are reimplemented INDEPENDENTLY with sole credit and NO contributor attribution. PR-01/PR-02 + this criterion must drop "credited to their contributors"; the reframed intent is "the fixes land, independently authored." Plans 03-02/03-03 satisfy the reframed intent, not the literal wording.)*
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+**Wave 1** *(all three fixes are independent — no file overlap — and run in parallel)*
+
+- [ ] 03-01-PLAN.md — Date off-by-one fix: date-only `YYYY-MM-DD` serialization in `DateTimeSetting` + legacy-epoch UTC migration + picker-boundary normalization + CI round-trip/migration/RangeAlarmSchedule test (DATE-01, DATE-02)
+- [ ] 03-02-PLAN.md — Volume fix (independent reimplementation of #467, sole credit): extract a pure cancellable `VolumeRampController`, wire into `RingtonePlayer`, decouple cancel from `setVolume`, + CI `fake_async` ramp test (VOL-01, PR-01)
+- [ ] 03-03-PLAN.md — FAB fix (independent reimplementation of #466, sole credit): one central bottom-clearance inset in `CustomListView` covering all ~13 list screens + narrow headless FAB-clearance widget test (FAB-01, PR-02)
+
 **UI hint**: yes
 
 ### Phase 4: QR/Barcode Scan-to-Dismiss Task
@@ -108,7 +115,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 |-------|----------------|--------|-----------|
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
 | 2. Snooze Reliability | 2/2 | Complete    | 2026-06-03 |
-| 3. Date, Volume & FAB High-Value Fixes | 0/0 | Not started | - |
+| 3. Date, Volume & FAB High-Value Fixes | 0/3 | Planned (3 plans, 1 wave) | - |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |
 
 ## Coverage
@@ -131,8 +138,8 @@ All 31 v1 requirements mapped to exactly one phase. No orphans, no duplicates.
 Phases with standard, line-level-confirmed patterns (research-phase optional):
 
 - **Phase 2 (Snooze):** `.floor()` sites and the dismiss-path gap are confirmed in source; the state machine is small and specified.
-- **Phase 3 (Date/Volume/FAB):** Mechanisms confirmed (epoch round-trip; `Future.delayed` + static flag); two community PRs (#467, #466) to review against the stated cancellation/correctness criteria.
+- **Phase 3 (Date/Volume/FAB):** Mechanisms confirmed (epoch round-trip; `Future.delayed` + static flag); two community PRs (#467, #466) reimplemented independently (sole credit, D-PR-METHOD).
 
 ---
 *Roadmap created: 2026-05-30*
-*Last updated: 2026-06-02 after planning Phase 2 (Snooze Reliability) — 2 plans, 2 waves*
+*Last updated: 2026-06-05 after planning Phase 3 (Date, Volume & FAB High-Value Fixes) — 3 plans, 1 wave (all parallel; no file overlap)*
