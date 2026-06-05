@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-05T00:55:25.316Z"
+status: verifying
+last_updated: "2026-06-05T01:01:32.607Z"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
-  percent: 50
+  completed_plans: 8
+  percent: 75
 ---
 
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
@@ -39,8 +39,8 @@ every phase/plan.
 
 - **Phase:** 3 of 4 (date, volume & fab high value fixes)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
-- **Status:** Ready to execute
-- **Progress:** [█████████░] 88%
+- **Status:** Phase complete — ready for verification
+- **Progress:** [██████████] 100%
 
 ## Phase Map
 
@@ -125,6 +125,7 @@ every phase/plan.
 | Phase 02 P02 | ~7min | 2 tasks | 2 files |
 | Phase 3 P1 | 4min | 3 tasks | 3 files |
 | Phase 03 P02 | 7min | 3 tasks | 3 files |
+| Phase 03 P03 | 2min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -135,3 +136,4 @@ every phase/plan.
 - [Phase ?]: [03-01] RangeAlarmSchedule proven by test unaffected by the date-only round-trip — finish boundary identical before/after for in-window and elapsed ranges; no range_alarm_schedule.dart change needed.
 - [Phase ?]: [03-02] Rising-volume ramp fixed at root: extracted a pure audio-free VolumeRampController (single owned Timer + injected void Function(double) callback + real cancel()); RingtonePlayer drives it and cancels at stop/pause/_play re-entry. cancel() is the ONLY ramp-stop signal — setVolume no longer kills the ramp (removed _stopRisingVolume). Reimplemented #467 independently, sole credit, no contributor attribution (D-PR-METHOD).
 - [Phase ?]: [03-02] Safe default (research Open Q1, for user to confirm at review): a plain mid-ring setVolume() leaves the ramp running and does NOT retarget the ceiling. Used fake_async (transitive) for CI Timer tests — no new dep. flutter test/analyze owed via CI; on-device audio ramp check is the remaining human gate. PR-01/PR-02/ROADMAP criterion #4 still say 'credit the contributor' — reword at next transition (deferred).
+- [Phase ?]: [03-03] FAB-01 fixed centrally at the shared list layer (D-FAB-SCOPE): CustomListView's list padding reserves a derived bottom inset = 8 + 56 (FAB tap target 16+24+16, fab.dart:84,88) + 16 (gap, fab.dart:74 / snackbar.dart:57,59) + (useMaterialStyle ? 20 : 0) (fab.dart:67-69) — each term cited inline (Pitfall 4). One edit covers all ~13 FAB screens; persistent_list_view.dart untouched; no nav-bar height. Reimplemented #466 independently, sole credit, no attribution (D-PR-METHOD). Narrow headless fab_clearance_test.dart asserts inset >= FAB extent (+20 material), kept in CI; flutter test/analyze owed via CI; on-device cross-OEM layout is the human gate. PR-02/ROADMAP criterion #4 still say 'credit the contributor' — reword at next transition (deferred).

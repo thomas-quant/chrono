@@ -23,7 +23,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 - [x] **Phase 1: Storage & Boot Reliability** - Kill the boot black-screen / splash-hang epic with non-fatal loads, atomic writes, an idempotent reschedule primitive, and an unlock-guarded boot path (all 3 plans complete; CLOSED 2026-06-02 by user sign-off — on-device reboot check accepted without independent verification; Test 2 converted to committed CI tests pending first green run)
 - [x] **Phase 2: Snooze Reliability** - Make snooze reliably re-ring, honor fractional lengths, enforce max-count across the isolate boundary, and stop one-shot alarms re-firing after snooze→dismiss (completed 2026-06-02)
-- [ ] **Phase 3: Date, Volume & FAB High-Value Fixes** - Fix specific-date off-by-one, make the rising-volume ramp stop cleanly, and free list items from FAB overlap (merging community PRs #467 and #466)
+- [x] **Phase 3: Date, Volume & FAB High-Value Fixes** - Fix specific-date off-by-one, make the rising-volume ramp stop cleanly, and free list items from FAB overlap (merging community PRs #467 and #466) (completed 2026-06-05)
 - [ ] **Phase 4: QR/Barcode Scan-to-Dismiss Task** - Ship a registered-code scan-to-dismiss alarm task on an F-Droid-clean scanner, with a default-on escape hatch, after de-risking the lock-screen camera
 
 ## Phase Details
@@ -89,7 +89,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 - [x] 03-01-PLAN.md — Date off-by-one fix: date-only `YYYY-MM-DD` serialization in `DateTimeSetting` + legacy-epoch UTC migration + picker-boundary normalization + CI round-trip/migration/RangeAlarmSchedule test (DATE-01, DATE-02)
 - [x] 03-02-PLAN.md — Volume fix (independent reimplementation of #467, sole credit): extract a pure cancellable `VolumeRampController`, wire into `RingtonePlayer`, decouple cancel from `setVolume`, + CI `fake_async` ramp test (VOL-01, PR-01)
-- [ ] 03-03-PLAN.md — FAB fix (independent reimplementation of #466, sole credit): one central bottom-clearance inset in `CustomListView` covering all ~13 list screens + narrow headless FAB-clearance widget test (FAB-01, PR-02)
+- [x] 03-03-PLAN.md — FAB fix (independent reimplementation of #466, sole credit): one central bottom-clearance inset in `CustomListView` covering all ~13 list screens + narrow headless FAB-clearance widget test (FAB-01, PR-02)
 
 **UI hint**: yes
 
@@ -115,7 +115,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 |-------|----------------|--------|-----------|
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
 | 2. Snooze Reliability | 2/2 | Complete    | 2026-06-03 |
-| 3. Date, Volume & FAB High-Value Fixes | 2/3 | In Progress|  |
+| 3. Date, Volume & FAB High-Value Fixes | 3/3 | Complete   | 2026-06-05 |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |
 
 ## Coverage
