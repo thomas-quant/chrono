@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-05T00:32:04.699Z"
+last_updated: "2026-06-05T00:48:58.816Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
   percent: 50
 ---
 
@@ -17,16 +17,16 @@ progress:
 ## Project Reference
 
 - **Core value:** The alarm must reliably ring and reliably stop — reliability before any new feature.
-- **Current focus:** Phase 3 — date, volume & fab high value fixes
+- **Current focus:** Phase 03 — date-volume-fab-high-value-fixes
 - **Type:** Brownfield (bug-fix + feature work on an existing, mature Flutter/Android alarm app).
 - **Key docs:** `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/research/`, `.planning/codebase/`.
 
 ## Current Position
 
-Phase: 03 (date-volume-fab-high-value-fixes) — CONTEXT GATHERED, READY TO PLAN
-Plan: Not started
+Phase: 03 (date-volume-fab-high-value-fixes) — EXECUTING
+Plan: 2 of 3
 Next: Plan Phase 3 → `/gsd-plan-phase 3`
-Resume file: `.planning/phases/03-date-volume-fab-high-value-fixes/03-CONTEXT.md`
+Resume file: None
 
 **Phase 3 discussion outcome (2026-06-05):** Date → store as local date-only `YYYY-MM-DD`, auto-correct
 legacy epoch on load (contingent on confirming `table_calendar` midnight-vs-noon UTC). Volume/FAB →
@@ -40,7 +40,7 @@ every phase/plan.
 - **Phase:** 3 of 4 (date, volume & fab high value fixes)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
 - **Status:** Ready to execute
-- **Progress:** [██████████] 100%
+- **Progress:** [████████░░] 75%
 
 ## Phase Map
 
@@ -123,9 +123,12 @@ every phase/plan.
 | Phase 01 P03 | 6min | 2 tasks | 2 files |
 | Phase 02 P01 | 8min | 3 tasks | 3 files |
 | Phase 02 P02 | ~7min | 2 tasks | 2 files |
+| Phase 3 P1 | 4min | 3 tasks | 3 files |
 
 ## Decisions
 
 - [Phase ?]: [02-01] Snooze fixed at source: seconds-based duration shared between _snoozeTime and scheduleSnoozeAlarm; snooze() reads clock.now() (D-B); snapLength:1 on Length slider (D-D).
 - [Phase ?]: [02-01] Single _resolveDismiss() (cancelSnooze + canonical update()) deactivates one-shot AND finished-dates schedules (D-C/#457); over-max snooze resolves as a dismiss (D-A); handleDismiss() kept as a public async delegator (D-E); isolate dismiss branch awaits it. update_alarms.dart + alarm_screen.dart reused unchanged.
 - [Phase ?]: [02-02] Authored alarm_snooze_test.dart (SNZ-01..05 regression: exact now+30s under withClock from Plan-01 clock.now(); once+finished-dates snooze->dismiss deactivation #457; over-max->dismiss; snoozeCount toJson<->fromJson). Repointed test-apk.yml analyze to the 4 Phase-2 files. No lib/ or pubspec change; flutter test+analyze owed via CI.
+- [Phase ?]: [03-01] Specific-date off-by-one fixed at the serialization root: DateTimeSetting persists date-only YYYY-MM-DD strings (D-DATE-FORMAT); loadValueFromJson reads new Strings as local DateTime(y,m,d) and legacy int epochs via isUtc:true UTC reinterpretation (D-DATE-MIGRATION) so broken alarms self-heal; malformed values salvage not crash (BOOT-04). Picker normalizes table_calendar UTC days to local at onDaySelected/onRangeSelected.
+- [Phase ?]: [03-01] RangeAlarmSchedule proven by test unaffected by the date-only round-trip — finish boundary identical before/after for in-window and elapsed ranges; no range_alarm_schedule.dart change needed.

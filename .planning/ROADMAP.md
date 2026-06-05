@@ -87,7 +87,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 **Wave 1** *(all three fixes are independent — no file overlap — and run in parallel)*
 
-- [ ] 03-01-PLAN.md — Date off-by-one fix: date-only `YYYY-MM-DD` serialization in `DateTimeSetting` + legacy-epoch UTC migration + picker-boundary normalization + CI round-trip/migration/RangeAlarmSchedule test (DATE-01, DATE-02)
+- [x] 03-01-PLAN.md — Date off-by-one fix: date-only `YYYY-MM-DD` serialization in `DateTimeSetting` + legacy-epoch UTC migration + picker-boundary normalization + CI round-trip/migration/RangeAlarmSchedule test (DATE-01, DATE-02)
 - [ ] 03-02-PLAN.md — Volume fix (independent reimplementation of #467, sole credit): extract a pure cancellable `VolumeRampController`, wire into `RingtonePlayer`, decouple cancel from `setVolume`, + CI `fake_async` ramp test (VOL-01, PR-01)
 - [ ] 03-03-PLAN.md — FAB fix (independent reimplementation of #466, sole credit): one central bottom-clearance inset in `CustomListView` covering all ~13 list screens + narrow headless FAB-clearance widget test (FAB-01, PR-02)
 
@@ -115,7 +115,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 |-------|----------------|--------|-----------|
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
 | 2. Snooze Reliability | 2/2 | Complete    | 2026-06-03 |
-| 3. Date, Volume & FAB High-Value Fixes | 0/3 | Planned (3 plans, 1 wave) | - |
+| 3. Date, Volume & FAB High-Value Fixes | 1/3 | In Progress|  |
 | 4. QR/Barcode Scan-to-Dismiss Task | 0/0 | Not started | - |
 
 ## Coverage
