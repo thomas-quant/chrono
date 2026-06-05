@@ -43,10 +43,10 @@ The alarm must reliably ring and reliably stop. An alarm app that crashes on boo
 - [ ] Fix startup-crash / black-screen epic (#442, #420, #448, #489, #498, #516, #514, #483, #289): boot isolate accesses encrypted SharedPreferences before device unlock → boot crash + half-written state → next launch hangs on splash. Guard storage until user-unlocked; make corrupted/partial state load non-fatal (recover, don't hang)
 - [ ] Fix snooze cluster (#439, #495, #445, #457): snooze never re-fires or just dismisses; one-shot alarm reschedules wrongly after snooze→dismiss (#457); handle fractional `snoozeLength`
 
-**Bugs — High-value (HIGH):**
-- [ ] Fix specific-date off-by-one (#340, #455, #472): `table_calendar` emits UTC-midnight, saved as epoch and reloaded as local → date rolls back a day for negative-UTC users. Normalize picker output / serialization to local date
-- [ ] Fix rising volume (#407, #506) — review and merge PR #467 (or equivalent fix); verify cancellation on stop
-- [ ] Fix FAB covering list items (#417) — review and merge PR #466
+**Bugs — High-value (HIGH):** — *Validated in Phase 3 (Date, Volume & FAB High-Value Fixes), 2026-06-05; on-device + CI gates tracked in `03-HUMAN-UAT.md`.*
+- [x] Fix specific-date off-by-one (#340, #455, #472): root cause fixed at serialization — `DateTimeSetting` persists date-only `YYYY-MM-DD`, picker normalized to local `DateTime(y,m,d)`, legacy epochs self-heal via UTC read (DATE-01, DATE-02)
+- [x] Fix rising volume (#407, #506): reimplemented independently as a pure cancellable `VolumeRampController` (sole credit per D-PR-METHOD, not a PR #467 merge); `setVolume` decoupled from ramp-stop; cancels cleanly on stop/pause/snooze (VOL-01, PR-01)
+- [x] Fix FAB covering list items (#417, #463): one central derived bottom-inset in `CustomListView` clears the FAB across all ~13 list screens; reimplemented independently (sole credit, not a PR #466 merge) (FAB-01, PR-02)
 
 ### Out of Scope
 
@@ -113,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-03 — Phase 2 (Snooze Reliability) complete: SNZ-01..05 fixed at source and locked by a CI-green regression suite (tests.yml: 176 passed); on-device smoke is the one remaining accepted gate. 2/4 phases done.*
+*Last updated: 2026-06-05 — Phase 3 (Date, Volume & FAB High-Value Fixes) complete: DATE-01/02, VOL-01, FAB-01, PR-01/02 fixed at source (date-only serialization, cancellable VolumeRampController, central FAB clearance); volume + FAB PRs reimplemented independently with sole credit (D-PR-METHOD). A post-execution code review found 5 warnings, all fixed. CI tests authored + structurally verified (toolchain absent locally — CI is the gate); on-device + CI checks tracked in 03-HUMAN-UAT.md. 3/4 phases done — only Phase 4 (QR/Barcode Scan-to-Dismiss) remains.*
