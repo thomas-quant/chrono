@@ -123,10 +123,15 @@ class RingtonePlayer {
         logger.t("Starting at random position: $randomNumber");
         activePlayer?.seek(duration * randomNumber);
       }
-      await setVolume(volume);
+      // When a rising-volume ramp will run, seed the player to 0 first and let
+      // the ramp own the climb. Seeding to the full target here would leave a
+      // brief full-volume window before start()'s leading _setVolume(0) pulls
+      // it down — the alarm must never start at full volume when ramping.
+      final bool willRamp = secondsToMaxVolume > 0;
+      await setVolume(willRamp ? 0.0 : volume);
 
       // Gradually increase the volume via the cancellable ramp controller.
-      if (secondsToMaxVolume > 0) {
+      if (willRamp) {
         _rampController.start(
           targetVolume: volume,
           duration: Duration(seconds: secondsToMaxVolume),
