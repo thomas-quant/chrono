@@ -1,7 +1,7 @@
 ---
 phase: 4
 slug: qr-barcode-scan-to-dismiss-task
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-06-05
@@ -178,14 +178,14 @@ All strings below are **new user-facing copy** and MUST be added to `lib/l10n/ap
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS (Flutter analog — flutter_zxing FOSS/F-Droid provenance per BUILD-02)
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: FLAG (non-blocking) — 3 font weights (400/600/700); all pre-existing in the app's font system and inherited from mirrored widgets, not invented for this phase. Executor: introduce no additional weight; bold/700 stays scoped to the `displaySmall` card-title role (`setting_action_card.dart`).
+- [x] Dimension 5 Spacing: FLAG (non-blocking) — 12px is outside the standard {4,8,16,24,32,48,64} set but is a multiple of 4 and inherited from `SwitchField` (`switch_field.dart:37`). Executor: the 12px exception is for the SwitchField row only; introduce no other non-standard spacing.
+- [x] Dimension 6 Registry Safety: PASS (Flutter analog — flutter_zxing FOSS/F-Droid provenance per BUILD-02)
 
-**Approval:** pending
+**Approval:** approved 2026-06-05 (gsd-ui-checker — 4 PASS / 2 non-blocking FLAG; both FLAGs are inherited-widget constraints, no revision required)
 
 ---
 
