@@ -526,22 +526,27 @@ cd android && ./gradlew :app:dependencies --configuration prodReleaseRuntimeClas
 | A4 | `ReaderWidget.dispose()` reliably clears the OS privacy indicator on every OEM | Pitfall 1 / SCAN-11 | Some OEM could lag the indicator. On-device check (SCAN-11) confirms; defensive explicit controller-stop on escape recommended. |
 | A5 | The `showWhenLocked` over-lock window permits a live camera preview over a SECURE keyguard | Item 1 / spike | **This is THE unknown.** If false on an OEM → unlock-then-scan fallback (D-LOCK-NOGO-UX). Resolved only by the spike. |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All three resolved during planning; decisions are now locked into the Phase-4 plans. Inline `RESOLVED:` notes below record the outcome.
 
 1. **Case-sensitivity of code matching (O1).**
    - What we know: Physical 1D/QR codes are usually case-insensitive ASCII; the normalize step is applied identically at register and compare, so it's internally consistent.
    - What's unclear: Whether any target user registers a case-significant payload (e.g. a URL QR).
    - Recommendation: Case-fold for v1 (fewer false rejects, matches Alarmy). Surface at discuss-phase; trivially reversible (one line in `normalizeCode`).
+   - **RESOLVED:** Case-fold for v1 (D-MATCH-NORMALIZE) — `normalizeCode` lower-cases + trims + strips control chars, applied identically at register and compare. Implemented in Plan 04-02 (`code_match.dart`).
 
 2. **Registration card route: `CustomSetting` vs new card type (O2).**
    - What we know: Both work; `CustomSetting` reuses `CustomSettingCard` but needs a `fromJsonFactories` entry (contradicting D-STORE-FORMAT's "no factory entry"); a new `ScanRegisterSettingCard` + plain `StringSetting` honors D-STORE-FORMAT exactly.
    - What's unclear: Team preference for one more factory entry vs one more card type in the `get_setting_widget` dispatch.
    - Recommendation: Planner's call (CONTEXT explicitly leaves wrapper-vs-direct to the planner). The `StringSetting` + custom button-card route is marginally cleaner re: D-STORE-FORMAT.
+   - **RESOLVED:** Route (B) — plain `StringSetting` + a `ScanRegisterCard` dispatched in `get_setting_widget.dart` (no `fromJsonFactories` entry; D-STORE-FORMAT honored). Implemented in Plan 04-05 Task 3.
 
 3. **Does `_setNextWidget`'s `volumeDuringTasks` lowering interfere with hearing wrong-scan haptic feedback? (O3)**
    - What we know: Volume auto-lowers to `volumeDuringTasks` during any task; haptics are independent of audio volume.
    - What's unclear: Nothing blocking — noted for completeness.
    - Recommendation: No action; haptic (`vibration`) is the primary wrong-scan signal, independent of volume.
+   - **RESOLVED:** No action — haptic-primary. The `vibration` haptic is the primary wrong-scan signal (independent of `volumeDuringTasks`), paired with the transient `error`-role `scanWrongCode` flash in Plan 04-04 Task 2 (`scan_task.dart`).
 
 ## The Lock-Screen Camera Spike (Item 1 — first plan, discrete go/no-go)
 
