@@ -72,6 +72,14 @@ class _ScanTaskState extends State<ScanTask> {
   /// SCAN-09).
   bool _torchUnavailable = false;
 
+  /// One-shot latch (CR-02): onSolve() must fire AT MOST ONCE. ReaderWidget can
+  /// deliver a second matching frame before teardown (scanDelaySuccess is a
+  /// 1000ms throttle, not a latch), and the escape Dismiss button can be
+  /// double-tapped — either could double-advance the task step or
+  /// double-dismiss the alarm. Mirrors ScanRegisterScreen's `_registered`
+  /// guard. Set true BEFORE every onSolve() call site.
+  bool _solved = false;
+
   /// Symbology set (SCAN-04): broad ZXing format set — QR + DataMatrix + the
   /// common 1D codes. Narrow to Format.qrCode only if 1D false-reads surface
   /// on device (SCAN-04 escape clause). Bitmask of Format bit-shift constants.
@@ -125,10 +133,15 @@ class _ScanTaskState extends State<ScanTask> {
   }
 
   void _onScan(Code code) {
+    // One-shot latch (CR-02): a second matching decode must not double-fire
+    // onSolve() (double-advance / double-dismiss).
+    if (_solved) return;
     // Privacy: the decoded payload is opaque — never emitted to logger/print/UI
     // (D-REG-DISPLAY / threat T-04-10). It is only normalized and compared.
     if (codesMatch(normalizeCode(code.text), _storedNormalized)) {
       // The match is the ONLY non-escape success path → advance/dismiss.
+      // Latch BEFORE calling onSolve so a re-entrant decode can't get through.
+      _solved = true;
       widget.onSolve();
       return;
     }
@@ -301,7 +314,13 @@ class _ScanTaskState extends State<ScanTask> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () => widget.onSolve(),
+            // Same one-shot latch as _onScan (CR-02): a double-tap must not
+            // double-fire onSolve().
+            onPressed: () {
+              if (_solved) return;
+              _solved = true;
+              widget.onSolve();
+            },
             child: Text(localizations.dismissAlarmButton),
           ),
         ),
