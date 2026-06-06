@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:clock/clock.dart';
 import 'package:clock_app/alarm/logic/alarm_isolate.dart';
 import 'package:clock_app/alarm/logic/alarm_reminder_notifications.dart';
 import 'package:clock_app/alarm/types/alarm_event.dart';
@@ -19,7 +20,11 @@ Future<void> scheduleAlarm(
   bool alarmClock = true,
   bool snooze = false,
 }) async {
-  DateTime now = DateTime.now();
+  // Use clock.now() (not DateTime.now()) so the "in the past" guard respects an
+  // injected clock under tests (withClock) — matches the Phase-2 snooze pattern.
+  // Outside a withClock zone clock.now() == DateTime.now(), so production
+  // behavior is unchanged; this only makes the guard deterministic in CI.
+  DateTime now = clock.now();
   if (startDate.isBefore(now)) {
     throw Exception(
         'Attempted to schedule alarm in the past. Schedule time: $startDate, current time: $now');
