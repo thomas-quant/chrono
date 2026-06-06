@@ -36,7 +36,6 @@ class _DynamicToggleSettingCardState<T extends ListItem> extends State<DynamicTo
         setState(() {
           widget.setting.toggle(context, value);
         });
-        print(widget.setting.value);
         widget.onChanged?.call(widget.setting.value);
       },
       // padding: widget.showAsCard ? 16 : 0,
