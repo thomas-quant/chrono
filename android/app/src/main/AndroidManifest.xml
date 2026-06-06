@@ -21,6 +21,15 @@
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
   <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
 
+  <!-- QR/barcode scan-to-dismiss task (SCAN-08). CAMERA permission is REQUESTED
+       at setup (Plan 05 registration card), never at fire time. required="false"
+       on every camera feature so the Play listing is NOT camera-gated: devices
+       without a camera can still install; the default-on escape hatch covers them. -->
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-feature android:name="android.hardware.camera" android:required="false" />
+  <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+  <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
+
   <application
     android:label="@string/app_name"
     tools:replace="android:label"
