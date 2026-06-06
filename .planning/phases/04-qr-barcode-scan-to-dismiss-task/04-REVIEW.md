@@ -30,6 +30,20 @@ findings:
   info: 4
   total: 11
 status: issues_found
+resolved:
+  - CR-01
+  - CR-02
+  - WR-04
+resolved_at: 2026-06-06
+open:
+  - WR-01
+  - WR-02
+  - WR-03
+  - WR-05
+  - IN-01
+  - IN-02
+  - IN-03
+  - IN-04
 ---
 
 # Phase 4: Code Review Report
@@ -126,6 +140,19 @@ Add a widget/integration test that exercises the **add** flow (not just
 `AlarmTask.validate()` in isolation) and asserts the task is not committed while
 the code is empty.
 
+**Resolution (2026-06-06, commit c687226 — RESOLVED):** Applied option 1. The
+FAB `onPressed` in `lib/settings/widgets/list_setting_screen.dart` now checks
+`newItem.validate(context)` after the add bottom sheet returns: items that fail
+their gate (the scan task with no registered code) are routed through
+`openCustomizeScreen` + `CustomizeListItemScreen(isNewItem: true)` and are only
+committed via the `onSave` callback, which fires solely when `CustomizeScreen`
+pops on a clean `validate()`. Items whose `validate()` returns null (every other
+type) keep the unchanged direct-add path. The post-await `context` use is guarded
+with a `mounted` check. NOTE (owed gate): the add-flow widget test and
+`flutter analyze` are NOT run locally (Flutter toolchain absent in this env) —
+they are owed CI/on-device gates; the WR-04 analyze repoint now covers
+`list_setting_screen.dart` in CI.
+
 ### CR-02: No re-entrancy guard in `ScanTask._onScan` — a second match decode double-advances/dismisses
 
 **File:** `lib/alarm/widgets/tasks/scan_task.dart:127-147`
@@ -158,6 +185,15 @@ void _onScan(Code code) {
   ...
 }
 ```
+
+**Resolution (2026-06-06, commit 205db0a — RESOLVED):** Added the `bool _solved`
+one-shot latch to `_ScanTaskState` in `lib/alarm/widgets/tasks/scan_task.dart`.
+`_onScan` returns early when `_solved` is set and latches `_solved = true` BEFORE
+calling `widget.onSolve()` on the match branch. The escape-hatch Dismiss button's
+`onPressed` (`_buildDismissButton`) is guarded with the same latch so a
+double-tap cannot double-fire `onSolve()`. Mirrors `ScanRegisterScreen`'s
+`_registered` guard. NOTE (owed gate): not exercised by a local test run
+(toolchain absent) — owed CI/on-device gate.
 
 ## Warnings
 
@@ -236,6 +272,18 @@ include `lib/alarm/widgets/tasks/scan_task.dart`,
 `lib/alarm/screens/scan_register_screen.dart`,
 `lib/alarm/widgets/scan_register_card.dart`,
 `lib/alarm/types/alarm_task.dart`, and the three new test files.
+
+**Resolution (2026-06-06, commit a509ccc — RESOLVED):** The "Analyze changed
+files (informational)" step in `.github/workflows/test-apk.yml` is repointed from
+the Phase-2 file list to the Phase-4 scan source + test set (15 files:
+`code_match.dart`, `escape_hatch_controller.dart`, `alarm_task.dart`,
+`alarm_task_schemas.dart`, `scan_task.dart`, `scan_register_screen.dart`,
+`scan_register_card.dart`, `scan_register_setting.dart`, `get_setting_widget.dart`,
+`customize_screen.dart`, `customize_list_item_screen.dart`,
+`list_setting_screen.dart`, and the three new test files). The step keeps
+`continue-on-error: true` and remains informational; the comment block now
+references Phase 4. NOTE: this is a CI-only gate — `flutter analyze` was NOT run
+locally (toolchain absent); the repoint takes effect on the next CI run.
 
 ### WR-05: BUILD-02 FOSS-clean gate runs only on `workflow_dispatch` — never on push/PR
 
