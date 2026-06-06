@@ -39,20 +39,32 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      # Informational: scoped to the Phase 2 changed files (the snooze fix +
-      # its regression test) so pre-existing project lints don't mask new
-      # issues. continue-on-error keeps the APK building even if analyze flags
-      # something — alarm.dart is a large pre-existing file that may carry
-      # unrelated lints, so read this step's log for NEW issues rather than
-      # expecting a hard zero.
+      # Informational: scoped to the Phase 4 changed files (the QR/barcode
+      # scan-to-dismiss task source + its tests) so pre-existing project lints
+      # don't mask new issues. continue-on-error keeps the APK building even if
+      # analyze flags something — some of these touch large pre-existing files
+      # (alarm_task.dart, list_setting_screen.dart, customize_screen.dart) that
+      # may carry unrelated lints, so read this step's log for NEW issues rather
+      # than expecting a hard zero.
       - name: Analyze changed files (informational)
         continue-on-error: true
         run: |
           flutter analyze \
-            lib/alarm/types/alarm.dart \
-            lib/alarm/logic/alarm_isolate.dart \
-            lib/alarm/data/alarm_settings_schema.dart \
-            test/alarm/types/alarm_snooze_test.dart
+            lib/alarm/logic/code_match.dart \
+            lib/alarm/logic/escape_hatch_controller.dart \
+            lib/alarm/types/alarm_task.dart \
+            lib/alarm/data/alarm_task_schemas.dart \
+            lib/alarm/widgets/tasks/scan_task.dart \
+            lib/alarm/screens/scan_register_screen.dart \
+            lib/alarm/widgets/scan_register_card.dart \
+            lib/settings/types/scan_register_setting.dart \
+            lib/settings/logic/get_setting_widget.dart \
+            lib/common/widgets/customize_screen.dart \
+            lib/common/widgets/list/customize_list_item_screen.dart \
+            lib/settings/widgets/list_setting_screen.dart \
+            test/alarm/logic/code_match_test.dart \
+            test/alarm/logic/escape_hatch_controller_test.dart \
+            test/alarm/types/alarm_task_scan_test.dart
 
       # Informational: runs the storage tests (and the rest of the suite).
       - name: Test (informational)
