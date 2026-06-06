@@ -35,11 +35,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [ ] **SCAN-01**: User can add a "Scan code to dismiss" task to an alarm, selectable alongside the existing dismiss tasks (math/retype/sequence/memory)
 - [ ] **SCAN-02**: During setup, the user scans and registers a specific QR or 1D barcode; the registered code value is stored in the task's settings
-- [ ] **SCAN-03**: At ring time, a live camera scanner opens and the alarm only dismisses when the scanned code matches the registered code (matching normalizes both sides identically — trim/control-char/case — so a trailing newline can't cause a false reject)
+- [x] **SCAN-03**: At ring time, a live camera scanner opens and the alarm only dismisses when the scanned code matches the registered code (matching normalizes both sides identically — trim/control-char/case — so a trailing newline can't cause a false reject)
 - [ ] **SCAN-04**: The scanner accepts QR codes and common 1D barcodes (EAN/UPC/Code128, etc.)
 - [ ] **SCAN-05**: The scan task gates full dismiss only; snooze remains a normal tap
-- [ ] **SCAN-06**: An escape-hatch fallback is ON by default — after a configurable threshold (failed attempts and/or elapsed time) a plain dismiss becomes available — and the user can tighten or disable it
-- [ ] **SCAN-07**: The escape hatch also triggers on camera-permission-denied and camera-unavailable, so a scan alarm can never become permanently un-dismissable; the fallback is screen-reader reachable
+- [x] **SCAN-06**: An escape-hatch fallback is ON by default — after a configurable threshold (failed attempts and/or elapsed time) a plain dismiss becomes available — and the user can tighten or disable it
+- [x] **SCAN-07**: The escape hatch also triggers on camera-permission-denied and camera-unavailable, so a scan alarm can never become permanently un-dismissable; the fallback is screen-reader reachable
 - [x] **SCAN-08**: Camera permission is requested at setup (never at fire time); `CAMERA` is declared in the manifest with `uses-feature` camera `required="false"`
 - [ ] **SCAN-09**: A torch/flashlight toggle is available in the scanner for dark rooms
 - [ ] **SCAN-10**: A "test scan" is available during setup so the user can confirm the registered code scans before relying on it
@@ -113,11 +113,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUILD-02 | Phase 4 | Complete |
 | SCAN-01 | Phase 4 | Pending |
 | SCAN-02 | Phase 4 | Pending |
-| SCAN-03 | Phase 4 | Pending |
+| SCAN-03 | Phase 4 | Complete |
 | SCAN-04 | Phase 4 | Pending |
 | SCAN-05 | Phase 4 | Pending |
-| SCAN-06 | Phase 4 | Pending |
-| SCAN-07 | Phase 4 | Pending |
+| SCAN-06 | Phase 4 | Complete |
+| SCAN-07 | Phase 4 | Complete |
 | SCAN-08 | Phase 4 | Complete |
 | SCAN-09 | Phase 4 | Pending |
 | SCAN-10 | Phase 4 | Pending |

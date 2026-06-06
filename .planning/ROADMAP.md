@@ -111,7 +111,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 **Wave 1** *(parallel — build gate + pure seams have no file overlap)*
 
 - [x] 04-01-PLAN.md — Build enablement gate: flutter_zxing 2.2.1 exact pin + minSdk 21→23 + CAMERA/uses-feature manifest + BUILD-02 zero-ML-Kit CI graph gate (BUILD-01, BUILD-02, SCAN-08)
-- [ ] 04-02-PLAN.md — Pure CI-testable seams: normalizeCode/codesMatch + EscapeHatchController (injectable clock/Timer) + headless tests (SCAN-03, SCAN-06, SCAN-07)
+- [x] 04-02-PLAN.md — Pure CI-testable seams: normalizeCode/codesMatch + EscapeHatchController (injectable clock/Timer) + headless tests (SCAN-03, SCAN-06, SCAN-07)
 
 **Wave 2** *(blocked on Wave 1; lock-screen spike + ring-side code run in parallel on disjoint files)*
 
@@ -135,7 +135,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
 | 2. Snooze Reliability | 2/2 | Complete    | 2026-06-03 |
 | 3. Date, Volume & FAB High-Value Fixes | 3/3 | Complete    | 2026-06-05 |
-| 4. QR/Barcode Scan-to-Dismiss Task | 1/6 | In Progress|  |
+| 4. QR/Barcode Scan-to-Dismiss Task | 2/6 | In Progress|  |
 
 ## Coverage
 

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-06T00:05:49.695Z"
+last_updated: "2026-06-06T00:12:50.596Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 14
-  completed_plans: 9
-  percent: 64
+  completed_plans: 10
+  percent: 71
 ---
 
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
@@ -24,7 +24,7 @@ progress:
 ## Current Position
 
 Phase: 04 (qr-barcode-scan-to-dismiss-task) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Next: Plan Phase 3 → `/gsd-plan-phase 3`
 Resume file: None
 
@@ -40,7 +40,7 @@ every phase/plan.
 - **Phase:** 4 of 4 (qr/barcode scan to dismiss task)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
 - **Status:** Ready to execute
-- **Progress:** [██████░░░░] 64%
+- **Progress:** [███████░░░] 71%
 
 ## Phase Map
 
@@ -127,6 +127,7 @@ every phase/plan.
 | Phase 03 P02 | 7min | 3 tasks | 3 files |
 | Phase 03 P03 | 2min | 2 tasks | 2 files |
 | Phase 04 P01 | ~6min | 3 tasks | 4 files |
+| Phase 04 P02 | 3min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -141,3 +142,4 @@ every phase/plan.
 - [Phase 04]: [04-01] flutter_zxing pinned EXACT 2.2.1 (no caret — ^2.2.0 would resolve into 2.3.0 which needs Flutter >=3.41, breaks Chrono 3.22.2); minSdkVersion 21->23 (plugin android/build.gradle hard-codes 23). ndkVersion left as flutter.ndkVersion — align to 27.0.12077973 ONLY if CI native build complains (contingency, unused).
 - [Phase 04]: [04-01] SCAN-08 manifest half: CAMERA permission + camera/autofocus/flash uses-feature all required=false (Play listing not camera-gated). Runtime permission REQUEST deferred to Plan 05 (requested at setup, never fire time).
 - [Phase 04]: [04-01] BUILD-02 zero-ML-Kit gate = new blocking dependency-graph job in test-apk.yml; greps prodReleaseRuntimeClasspath for mlkit|play-services|gms, exit 1 on match; NOT continue-on-error; no emulator job. Authoritative in CI only — toolchain absent locally, OWED on push.
+- [Phase ?]: [04-02] code_match + EscapeHatchController pure seams (SCAN-03/06/07): normalize strips control chars + case-fold (D-MATCH-NORMALIZE), codesMatch empty-stored floor; escape controller single Timer + idempotent _fired, defaults 10/120s (D-ESC-DEFAULT), fireNow ignores enabled (SCAN-07 asymmetry). Both tests owed-green via CI (toolchain absent).
