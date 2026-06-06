@@ -64,7 +64,7 @@ dependencies:
   watcher: ^1.1.0
   dynamic_color: ^1.7.0
   material_color_utilities: ^0.8.0
-  flutter_oss_licenses: ^3.0.2  
+  flutter_oss_licenses: ^3.0.2
   locale_names: ^1.1.1
   # home_widget: ^0.5.0
   home_widget:
@@ -104,6 +104,18 @@ dev_dependencies:
 
 dependency_overrides:
   intl: any
+  # camerax-apk-build-fail: pin the transitive CameraX Android impl to the
+  # pre-SurfaceProducer 0.6.5.x line. flutter_zxing 2.2.1 -> camera ->
+  # camera_android_camerax is constrained `^0.6.5` (>=0.6.5 <0.7.0), so with the
+  # (stale) lock not pinning it, pub floats it to 0.6.8+2. That release adopted the
+  # engine `TextureRegistry.SurfaceProducer` API, which is ABSENT from the Flutter
+  # 3.22.2 Android embedding -> PreviewHostApiImpl.java fails javac with
+  # "cannot find symbol" / "method does not override a supertype". Pinning `camera`
+  # itself does NOT help (pub would still float camerax up under ^0.6.5); the upper
+  # bound must be set directly on camera_android_camerax. 0.6.5.x is the CameraX impl
+  # contemporaneous with Flutter 3.22.2 and is pure androidx.camera (FOSS, no
+  # proprietary ML/Play blobs), so the F-Droid-clean BUILD-02 gate stays green.
+  camera_android_camerax: '>=0.6.5 <0.6.6'
 
 flutter:
   generate: true
