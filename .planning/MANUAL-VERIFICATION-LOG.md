@@ -14,33 +14,46 @@ _Last updated: 2026-06-06 (after Phase 4 authorable execution — on-device gate
 
 ---
 
-## Phase 4 — QR/Barcode Scan-to-Dismiss Task (authorable-complete 2026-06-06; NOT closed)
+## Phase 4 — QR/Barcode Scan-to-Dismiss Task (authorable-complete + CI-green 2026-06-06; NOT closed)
 
-Authorable plans 04-01, 04-02, 04-04, 04-05 landed on `master`. 04-03 (lock-screen spike) and 04-06
-(end-to-end e2e) are inherently on-device and were **deferred** — no device or Flutter/Dart toolchain in
-the execution environment, so nothing here was run or claimed locally. Code-review BLOCKERs CR-01
-(add-path save-gate bypass) and CR-02 (ScanTask re-entrancy) were found and fixed; WR-04 (CI analyze
-scope) fixed; WR-01/02/03/05 + INFO left open.
-Source: `04-01..05-SUMMARY.md`, `04-REVIEW.md`, `04-03-PLAN.md`, `04-06-PLAN.md`.
+Authorable plans 04-01, 04-02, 04-04, 04-05 landed on `master` and were pushed to the user's fork
+(thomas-quant/chrono); **CI is now green** (see §A — 212 tests, BUILD-02 F-Droid gate, dev APK builds).
+04-03 (lock-screen spike) and 04-06 (end-to-end e2e) remain inherently on-device and **deferred** — no
+device in the execution environment. Code-review BLOCKERs CR-01 (add-path save-gate bypass) and CR-02
+(ScanTask re-entrancy) were found and fixed; WR-04 (CI analyze scope) fixed; WR-01/02/03/05 + INFO left
+open. CI surfaced and fixed three more issues during the push: a Phase-3 DATE-02 wall-clock-fragile test,
+the BUILD-02 gate exit-127 (missing `gradlew`), and the dev-APK `camera_android_camerax` SurfaceProducer
+build failure (debug session, resolved).
+Source: `04-01..05-SUMMARY.md`, `04-REVIEW.md`, `04-03-PLAN.md`, `04-06-PLAN.md`,
+`.planning/debug/resolved/camerax-apk-build-fail.md`.
 
-### A. CI gates owed (authoritative — run on next push; user authorizes, both remotes outward-facing)
-- [ ] **`tests.yml` green** on the new pure-seam + round-trip tests:
-  `test/alarm/logic/code_match_test.dart`, `test/alarm/logic/escape_hatch_controller_test.dart`,
-  `test/alarm/types/alarm_task_scan_test.dart`. (SCAN-03/06/07 + SCAN-01 behavioral GREEN.)
-  Observed (CI run link / result): …
-- [ ] **`flutter gen-l10n` succeeds** — the new `scan*` ARB keys generate their `AppLocalizations`
-  getters (referenced by `scan_task.dart` / `alarm_task_schemas.dart` / registration UI) before compile.
-  Observed: …
-- [ ] **`flutter analyze` (test-apk.yml, now repointed to the Phase-4 scan files)** — read the log for
-  NEW issues (incl. WR-01 torch dead-code). Informational/continue-on-error.
-  Observed: …
-- [ ] **Dev-APK native build compiles `flutter_zxing`** (FFI/NDK). If CI flags an NDK/CMake mismatch,
-  set `ndkVersion 27.0.12077973` (recorded contingency, currently `flutter.ndkVersion`).
-  Observed: …
-- [ ] **BUILD-02 zero-ML-Kit prod-graph gate PASSES** (blocking job greps `prodReleaseRuntimeClasspath`
-  for `mlkit|play-services|gms`, expects none). NOTE WR-05: this job currently triggers only on
-  `workflow_dispatch`, not push/PR — run it explicitly until/unless that's changed.
-  Observed: …
+### A. CI gates — VERIFIED GREEN 2026-06-06 (pushed to thomas-quant/chrono master; user-authorized)
+- [x] **`tests.yml` green** on the new pure-seam + round-trip tests
+  (`code_match_test`, `escape_hatch_controller_test`, `alarm_task_scan_test` — SCAN-03/06/07 + SCAN-01).
+  Observed: run 27051911662 — success, **🎉 212 tests passed** (also fixed a pre-existing Phase-3
+  DATE-02 wall-clock-fragile test along the way; commit 6780bf5).
+- [x] **`flutter gen-l10n` succeeds** — new `scan*` ARB getters generate.
+  Observed: ran clean as a step in both CI jobs (run 27051911373).
+- [x] **`flutter analyze` (test-apk.yml, repointed to the Phase-4 scan files)** — informational/continue-on-error.
+  Observed: step success in run 27051911373. (WR-01 torch dead-code still open — see §D.)
+- [x] **Dev-APK build compiles** (`flutter_zxing` FFI/NDK + the camera federation).
+  Observed: run 27051911373 "Build release dev APK" = success; artifact `chrono-dev-release-apk`
+  (59.7 MB) uploaded (expires 2026-06-13) — **this is the APK to install for §B/§C on-device testing.**
+  NOTE: required a fix — `camera_android_camerax` (pulled transitively by flutter_zxing) floated to
+  0.6.8+2 which uses the engine `SurfaceProducer` API absent in Flutter 3.22.2 → javac failure.
+  Capped via `dependency_overrides: camera_android_camerax: '>=0.6.5 <0.6.6'` (commit 21a7f11;
+  debug session `.planning/debug/resolved/camerax-apk-build-fail.md`).
+- [x] **BUILD-02 zero-ML-Kit prod-graph gate PASSES** (greps `prodReleaseRuntimeClasspath` for
+  `mlkit|play-services|gms`, found none — F-Droid-clean confirmed; the camerax cap stays pure androidx).
+  Observed: run 27051911373 BUILD-02 job = success. Also fixed: the gate was exit-127 (no `gradlew`);
+  now uses `--config-only` + the wrapper jar (commit a509ccc/5964e4b). NOTE WR-05: this job still
+  triggers only on `workflow_dispatch`, not push/PR — dispatch it explicitly each time.
+
+### A2. CI follow-up (not a blocker)
+- [ ] **Commit the CI-regenerated `pubspec.lock`.** It is currently stale (pre-Phase-4) so CI re-resolves
+  the camera/zxing federation every run; committing the lock hardens the `camera_android_camerax` cap and
+  the `flutter_zxing 2.2.1` pin against future float. (Needs a Flutter toolchain or pulling the lock CI
+  produces.) Tracked here per the camerax debug session follow_up.
 
 ### B. On-device gate — 04-03 lock-screen camera spike (criterion #1; never auto-approvable)
 - [ ] **Live `flutter_zxing` `ReaderWidget` preview over a SECURE keyguard, ≥2 OEMs.** Add the throwaway

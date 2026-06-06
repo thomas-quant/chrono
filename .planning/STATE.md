@@ -46,7 +46,7 @@ WR-01 (torch graceful-no-flash dead code — needs on-device/zxing-API resolutio
 `workflow_dispatch`) + 4 INFO — all tracked open in `04-REVIEW.md`.
 
 - **Phase:** 4 of 4 (qr/barcode scan-to-dismiss task) — authorable-complete, on-device gates owed
-- **Status:** Authorable work complete + code-review blockers fixed; CI + on-device gates owed (see `.planning/MANUAL-VERIFICATION-LOG.md`)
+- **Status:** Authorable work complete + code-review blockers fixed; **CI GREEN** (212 tests, BUILD-02 F-Droid zero-ML-Kit gate, dev APK builds — pushed to fork `thomas-quant/chrono`); on-device gates 04-03/04-06 still owed (see `.planning/MANUAL-VERIFICATION-LOG.md`)
 - **Progress:** [████████░░] 75% (12/14 plans)
 
 ## Phase Map
@@ -117,12 +117,13 @@ WR-01 (torch graceful-no-flash dead code — needs on-device/zxing-API resolutio
 ## Session Continuity
 
 - **Last action (2026-06-06):** Executed Phase 4 authorable plans via `/gsd-execute-phase 4`. User chose "build authorable, defer both on-device gates." Ran 04-01, 04-02, 04-04, 04-05 sequentially on `master` (no worktree isolation — merge-back reliability), each with atomic commits + own STATE/ROADMAP updates. Ran the code-review gate (quick): 2 BLOCKERs (CR-01 add-path save-gate bypass → un-dismissable alarm; CR-02 ScanTask onSolve re-entrancy) + WR-04 (stale CI analyze scope) verified and FIXED via gsd-code-fixer (`c687226`, `205db0a`, `a509ccc`, REVIEW resolution `7947d1d`). Skipped 04-03 (lock-screen spike) and 04-06 (on-device e2e) per user — neither runnable without a device + Flutter toolchain. Phase NOT marked complete (2 plans remain).
-- **Next action:** On hardware: build the dev APK via CI (`test-apk.yml`), then run 04-03 (lock-screen camera spike across ≥2 OEMs → `04-LOCKSCREEN-SPIKE.md` + revert the throwaway scaffold) and 04-06 (full scan-to-dismiss e2e matrix). Then re-run phase verification + `phase.complete`. Any on-device defect → `/gsd-plan-phase 4 --gaps`.
-- **Watch (owed CI/human gates — toolchain absent here, NO push performed):** Phase-4 `flutter test` (`tests.yml` — code_match, escape_hatch_controller, alarm_task_scan), `flutter gen-l10n` (new `scan*` ARB getters), `flutter analyze` (now repointed to the Phase-4 scan files), the dev-APK native `flutter_zxing` build, and the BUILD-02 zero-ML-Kit prod-graph gate are all OWED via CI (user authorizes the push/dispatch — both remotes outward-facing). On-device: 04-03 spike + 04-06 e2e (real camera over a fired alarm, torch SCAN-09, camera-release SCAN-11, escape-never-traps, no-go unlock-to-scan). Open code-review items WR-01/02/03/05 + 4 INFO tracked in `04-REVIEW.md`. Prior-phase gates (Phase 1-3 CI test/analyze + on-device smokes) also still owed. See `.planning/MANUAL-VERIFICATION-LOG.md`.
+- **Next action:** Download the CI dev APK (`chrono-dev-release-apk` from test-apk.yml run 27051911373, on `thomas-quant/chrono`; expires 2026-06-13), install on hardware, then run 04-03 (lock-screen camera spike across ≥2 OEMs → `04-LOCKSCREEN-SPIKE.md` + revert the throwaway scaffold) and 04-06 (full scan-to-dismiss e2e matrix). Then re-run phase verification + `phase.complete`. Any on-device defect → `/gsd-plan-phase 4 --gaps`.
+- **CI status (2026-06-06, pushed to fork — VERIFIED GREEN):** `tests.yml` run 27051911662 = 212/212; `test-apk.yml` run 27051911373 = success (BUILD-02 zero-ML-Kit gate PASS, dev APK built + uploaded). Three issues surfaced+fixed during the push: Phase-3 DATE-02 wall-clock-fragile test (commit 6780bf5), BUILD-02 gate exit-127/missing-gradlew (a509ccc/5964e4b), and the dev-APK `camera_android_camerax` SurfaceProducer build failure (capped to `<0.6.6`, commit 21a7f11; debug session resolved).
+- **Watch (still owed):** On-device 04-03 spike + 04-06 e2e (real camera over a fired alarm, torch SCAN-09, camera-release SCAN-11, escape-never-traps, no-go unlock-to-scan). Open code-review items WR-01/02/03/05 + 4 INFO (`04-REVIEW.md`). Follow-up: commit the CI-regenerated `pubspec.lock` to harden the camerax/zxing pins (currently re-resolved each CI run). Prior-phase gates (Phase 1-3 on-device smokes) also still owed. See `.planning/MANUAL-VERIFICATION-LOG.md`.
 
 ---
 *State initialized: 2026-05-30*
-*Last updated: 2026-06-06 after executing Phase 4 authorable plans (04-01/02/04/05) + code-review blocker fixes (CR-01/CR-02/WR-04); 04-03 spike + 04-06 e2e deferred (on-device); phase not yet complete; CI/on-device gates owed.*
+*Last updated: 2026-06-06 — Phase 4 authorable plans (04-01/02/04/05) + code-review fixes (CR-01/CR-02/WR-04) pushed to fork; CI driven GREEN (212 tests, BUILD-02 F-Droid gate, dev APK builds) after fixing DATE-02 + BUILD-02-gate + camerax build failures; 04-03 spike + 04-06 e2e deferred (on-device); phase not yet complete.*
 
 ## Performance Metrics
 
