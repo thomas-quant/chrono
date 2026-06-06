@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-05T23:34:26.071Z"
+last_updated: "2026-06-06T00:05:49.695Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 14
-  completed_plans: 8
-  percent: 57
+  completed_plans: 9
+  percent: 64
 ---
 
 # Project State: Chrono — Reliability + QR Dismiss Task Milestone
@@ -17,16 +17,16 @@ progress:
 ## Project Reference
 
 - **Core value:** The alarm must reliably ring and reliably stop — reliability before any new feature.
-- **Current focus:** Phase 4 — qr/barcode scan to dismiss task
+- **Current focus:** Phase 04 — qr-barcode-scan-to-dismiss-task
 - **Type:** Brownfield (bug-fix + feature work on an existing, mature Flutter/Android alarm app).
 - **Key docs:** `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/research/`, `.planning/codebase/`.
 
 ## Current Position
 
-Phase: 03 (date-volume-fab-high-value-fixes) — EXECUTING
-Plan: Not started
+Phase: 04 (qr-barcode-scan-to-dismiss-task) — EXECUTING
+Plan: 2 of 6
 Next: Plan Phase 3 → `/gsd-plan-phase 3`
-Resume file: .planning/phases/04-qr-barcode-scan-to-dismiss-task/04-UI-SPEC.md
+Resume file: None
 
 **Phase 3 discussion outcome (2026-06-05):** Date → store as local date-only `YYYY-MM-DD`, auto-correct
 legacy epoch on load (contingent on confirming `table_calendar` midnight-vs-noon UTC). Volume/FAB →
@@ -40,7 +40,7 @@ every phase/plan.
 - **Phase:** 4 of 4 (qr/barcode scan to dismiss task)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
 - **Status:** Ready to execute
-- **Progress:** [██████████] 100%
+- **Progress:** [██████░░░░] 64%
 
 ## Phase Map
 
@@ -126,6 +126,7 @@ every phase/plan.
 | Phase 3 P1 | 4min | 3 tasks | 3 files |
 | Phase 03 P02 | 7min | 3 tasks | 3 files |
 | Phase 03 P03 | 2min | 2 tasks | 2 files |
+| Phase 04 P01 | ~6min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -137,3 +138,6 @@ every phase/plan.
 - [Phase ?]: [03-02] Rising-volume ramp fixed at root: extracted a pure audio-free VolumeRampController (single owned Timer + injected void Function(double) callback + real cancel()); RingtonePlayer drives it and cancels at stop/pause/_play re-entry. cancel() is the ONLY ramp-stop signal — setVolume no longer kills the ramp (removed _stopRisingVolume). Reimplemented #467 independently, sole credit, no contributor attribution (D-PR-METHOD).
 - [Phase ?]: [03-02] Safe default (research Open Q1, for user to confirm at review): a plain mid-ring setVolume() leaves the ramp running and does NOT retarget the ceiling. Used fake_async (transitive) for CI Timer tests — no new dep. flutter test/analyze owed via CI; on-device audio ramp check is the remaining human gate. PR-01/PR-02/ROADMAP criterion #4 still say 'credit the contributor' — reword at next transition (deferred).
 - [Phase ?]: [03-03] FAB-01 fixed centrally at the shared list layer (D-FAB-SCOPE): CustomListView's list padding reserves a derived bottom inset = 8 + 56 (FAB tap target 16+24+16, fab.dart:84,88) + 16 (gap, fab.dart:74 / snackbar.dart:57,59) + (useMaterialStyle ? 20 : 0) (fab.dart:67-69) — each term cited inline (Pitfall 4). One edit covers all ~13 FAB screens; persistent_list_view.dart untouched; no nav-bar height. Reimplemented #466 independently, sole credit, no attribution (D-PR-METHOD). Narrow headless fab_clearance_test.dart asserts inset >= FAB extent (+20 material), kept in CI; flutter test/analyze owed via CI; on-device cross-OEM layout is the human gate. PR-02/ROADMAP criterion #4 still say 'credit the contributor' — reword at next transition (deferred).
+- [Phase 04]: [04-01] flutter_zxing pinned EXACT 2.2.1 (no caret — ^2.2.0 would resolve into 2.3.0 which needs Flutter >=3.41, breaks Chrono 3.22.2); minSdkVersion 21->23 (plugin android/build.gradle hard-codes 23). ndkVersion left as flutter.ndkVersion — align to 27.0.12077973 ONLY if CI native build complains (contingency, unused).
+- [Phase 04]: [04-01] SCAN-08 manifest half: CAMERA permission + camera/autofocus/flash uses-feature all required=false (Play listing not camera-gated). Runtime permission REQUEST deferred to Plan 05 (requested at setup, never fire time).
+- [Phase 04]: [04-01] BUILD-02 zero-ML-Kit gate = new blocking dependency-graph job in test-apk.yml; greps prodReleaseRuntimeClasspath for mlkit|play-services|gms, exit 1 on match; NOT continue-on-error; no emulator job. Authoritative in CI only — toolchain absent locally, OWED on push.

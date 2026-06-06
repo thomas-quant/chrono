@@ -40,7 +40,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **SCAN-05**: The scan task gates full dismiss only; snooze remains a normal tap
 - [ ] **SCAN-06**: An escape-hatch fallback is ON by default — after a configurable threshold (failed attempts and/or elapsed time) a plain dismiss becomes available — and the user can tighten or disable it
 - [ ] **SCAN-07**: The escape hatch also triggers on camera-permission-denied and camera-unavailable, so a scan alarm can never become permanently un-dismissable; the fallback is screen-reader reachable
-- [ ] **SCAN-08**: Camera permission is requested at setup (never at fire time); `CAMERA` is declared in the manifest with `uses-feature` camera `required="false"`
+- [x] **SCAN-08**: Camera permission is requested at setup (never at fire time); `CAMERA` is declared in the manifest with `uses-feature` camera `required="false"`
 - [ ] **SCAN-09**: A torch/flashlight toggle is available in the scanner for dark rooms
 - [ ] **SCAN-10**: A "test scan" is available during setup so the user can confirm the registered code scans before relying on it
 - [ ] **SCAN-11**: The camera is released on every exit path (success, escape hatch, screen background) — no stuck camera/privacy indicator
@@ -48,8 +48,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Platform / Build
 
-- [ ] **BUILD-01**: minSdk is raised from 21 to 23 (Android 6.0+) to support the F-Droid-clean scanner
-- [ ] **BUILD-02**: The scanner uses `flutter_zxing` (exact-pinned 2.2.x, not a caret range); the F-Droid (`prod`) build compiles with zero `mlkit`/`gms`/`play-services` in the Gradle dependency graph
+- [x] **BUILD-01**: minSdk is raised from 21 to 23 (Android 6.0+) to support the F-Droid-clean scanner
+- [x] **BUILD-02**: The scanner uses `flutter_zxing` (exact-pinned 2.2.x, not a caret range); the F-Droid (`prod`) build compiles with zero `mlkit`/`gms`/`play-services` in the Gradle dependency graph
 
 ### Community PRs (review & merge)
 
@@ -109,8 +109,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FAB-01 | Phase 3 | Complete |
 | PR-01 | Phase 3 | Complete |
 | PR-02 | Phase 3 | Complete |
-| BUILD-01 | Phase 4 | Pending |
-| BUILD-02 | Phase 4 | Pending |
+| BUILD-01 | Phase 4 | Complete |
+| BUILD-02 | Phase 4 | Complete |
 | SCAN-01 | Phase 4 | Pending |
 | SCAN-02 | Phase 4 | Pending |
 | SCAN-03 | Phase 4 | Pending |
@@ -118,7 +118,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCAN-05 | Phase 4 | Pending |
 | SCAN-06 | Phase 4 | Pending |
 | SCAN-07 | Phase 4 | Pending |
-| SCAN-08 | Phase 4 | Pending |
+| SCAN-08 | Phase 4 | Complete |
 | SCAN-09 | Phase 4 | Pending |
 | SCAN-10 | Phase 4 | Pending |
 | SCAN-11 | Phase 4 | Pending |
