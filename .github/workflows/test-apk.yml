@@ -80,3 +80,67 @@ jobs:
           name: chrono-dev-release-apk
           path: build/app/outputs/flutter-apk/*.apk
           retention-days: 7
+
+  # BUILD-02 exit criterion: prove the prod (F-Droid) release dependency graph
+  # contains ZERO Google ML Kit / Play Services / gms artifacts. flutter_zxing is
+  # the only FOSS-clean Flutter scanner (native ZXing via FFI), but its transitive
+  # camera/image_picker deps could in theory pull a non-FOSS Android artifact —
+  # this gate catches that deterministically (RESEARCH Pitfall 3). It targets the
+  # prod flavor's RELEASE runtime classpath specifically — that is the artifact
+  # F-Droid ships. A grep MATCH is the FAIL condition (exit 1); zero matches PASS.
+  # This is a HARD gate (no continue-on-error), unlike the informational analyze
+  # step above. Authoritative in CI only — cannot run on the dev machine (no
+  # Android SDK / NDK / network).
+  dependency-graph:
+    name: BUILD-02 zero ML Kit (prod release classpath)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.2'
+          channel: 'stable'
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      # Generates lib/l10n -> AppLocalizations so Gradle configuration can resolve
+      # the Flutter module without a codegen failure.
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      # Throwaway signing material so the release signingConfig resolves during
+      # Gradle configuration (build.gradle reads android/key.properties +
+      # android/app/release-key.jks). Dependency resolution does not assemble or
+      # sign, but this keeps the configuration phase clean and self-contained.
+      - name: Generate ephemeral keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore android/app/release-key.jks \
+            -storepass androidtest -keypass androidtest \
+            -alias chronotest -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=Chrono Test, OU=Dev, O=Test, L=Test, ST=Test, C=US"
+          printf 'keyAlias=chronotest\nkeyPassword=androidtest\nstorePassword=androidtest\n' > android/key.properties
+
+      # BUILD-02 HARD GATE: resolve the prod-flavor release runtime classpath and
+      # FAIL the build if any mlkit / play-services / gms artifact is present.
+      - name: Verify zero ML Kit in prod release dependency graph
+        run: |
+          cd android
+          ./gradlew :app:dependencies --configuration prodReleaseRuntimeClasspath > deps.txt
+          if grep -Eiq 'mlkit|play-services|gms' deps.txt; then
+            echo "FAIL: non-FOSS dependency present in prodReleaseRuntimeClasspath:"
+            grep -Ei 'mlkit|play-services|gms' deps.txt
+            exit 1
+          else
+            echo "PASS: zero ML Kit / Play Services / gms in the prod release classpath"
+          fi
