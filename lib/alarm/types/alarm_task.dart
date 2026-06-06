@@ -1,9 +1,11 @@
 import 'package:clock_app/alarm/data/alarm_task_schemas.dart';
+import 'package:clock_app/alarm/logic/code_match.dart';
 import 'package:clock_app/common/types/json.dart';
 import 'package:clock_app/common/types/list_item.dart';
 import 'package:clock_app/common/utils/id.dart';
 import 'package:clock_app/settings/types/setting_group.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 enum AlarmTaskType {
   math,
@@ -97,6 +99,28 @@ class AlarmTask extends CustomizableListItem {
   @override
   SettingGroup get settings => _schema.settings;
   Widget Function(Function() onSolve) get builder => _schema.getBuilder;
+
+  /// Save-gate predicate (D-REG-REQUIRED). For the scan task ONLY, a registered
+  /// code is required to save: when the normalized "Registered Code" is empty,
+  /// return the `scanCodeRequired` message to block Save (enforced at the
+  /// CustomizeScreen Save button). Every other task type returns null (savable),
+  /// so no other AlarmTask or CustomizableListItem is affected.
+  ///
+  /// `normalizeCode` is used here so emptiness is tested EXACTLY as the value was
+  /// stored (the register screen normalizes before storing) — a whitespace-only
+  /// scan can never satisfy the gate. This is the user-blocking half of the gate;
+  /// the inline ScanRegisterCard renders the same `scanCodeRequired` copy as the
+  /// visible explanation, and re-scanning a code clears the gate.
+  @override
+  String? validate(BuildContext context) {
+    if (type != AlarmTaskType.scan) return null;
+    final registered =
+        normalizeCode(_schema.settings.getSetting("Registered Code").value);
+    if (registered.isEmpty) {
+      return AppLocalizations.of(context)!.scanCodeRequired;
+    }
+    return null;
+  }
 
   @override
   Json toJson() {

@@ -1,6 +1,7 @@
 import 'package:clock_app/common/types/list_item.dart';
 import 'package:clock_app/navigation/widgets/app_top_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class CustomizeState {
@@ -16,12 +17,19 @@ class CustomizeScreen<Item extends CustomizableListItem>
     this.onSave,
     required this.builder,
     required this.isNewItem,
+    this.validate,
   });
 
   final Item item;
   final void Function(Item item)? onSave;
   final Widget Function(BuildContext context, Item item) builder;
   final bool isNewItem;
+
+  /// Optional save-gate. When non-null and it returns a non-null error message
+  /// for the working item, the Save button does NOT pop — it shows + announces
+  /// the error instead (D-REG-REQUIRED). Default null = no gate (existing
+  /// behavior for every other customize screen).
+  final String? Function(Item item)? validate;
 
   @override
   State<CustomizeScreen> createState() => _CustomizeScreenState<Item>();
@@ -58,6 +66,25 @@ class _CustomizeScreenState<Item extends CustomizableListItem>
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: TextButton(
             onPressed: () {
+              // Save gate (D-REG-REQUIRED): block the pop and announce the error
+              // when validation fails (e.g. a scan task with no registered code).
+              // Never a silent dead button — the message is shown AND announced
+              // to screen readers (UI-SPEC Surface 5).
+              final String? error = widget.validate?.call(_item);
+              if (error != null) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      error,
+                      style: TextStyle(color: colorScheme.onError),
+                    ),
+                    backgroundColor: colorScheme.error,
+                  ),
+                );
+                SemanticsService.announce(error, Directionality.of(context));
+                return;
+              }
               widget.onSave?.call(_item);
               _isSaved = true;
               Navigator.pop(context, _item);

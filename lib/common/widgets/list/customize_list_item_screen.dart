@@ -11,12 +11,19 @@ class CustomizeListItemScreen<Item extends CustomizableListItem>
     this.itemPreviewBuilder,
     required this.isNewItem,
     this.headerBuilder,
+    this.validate,
   });
 
   final Item item;
   final bool isNewItem;
   final Widget? Function(Item item)? itemPreviewBuilder;
   final Widget Function(Item item)? headerBuilder;
+
+  /// Optional save-gate override. When omitted, the item's own
+  /// `CustomizableListItem.validate(context)` is used (a no-op for every item
+  /// except the scan AlarmTask — D-REG-REQUIRED). Threaded into the inner
+  /// `CustomizeScreen` Save button.
+  final String? Function(Item item)? validate;
 
   @override
   State<CustomizeListItemScreen> createState() =>
@@ -30,6 +37,11 @@ class _CustomizeListItemScreenState<Item extends CustomizableListItem>
     return CustomizeScreen(
         item: widget.item,
         isNewItem: widget.isNewItem,
+        // Drive the Save gate from the item's own validate() (default no-op for
+        // every item except the scan AlarmTask — D-REG-REQUIRED), unless the
+        // caller supplied an explicit override.
+        validate: widget.validate ??
+            (Item item) => item.validate(context),
         builder: (context, item) {
           return Stack(children: [
             Column(
