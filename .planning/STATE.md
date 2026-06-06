@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-06T00:23:03.871Z"
+last_updated: "2026-06-06T00:32:33.352Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 14
-  completed_plans: 11
+  completed_plans: 12
   percent: 75
 ---
 
@@ -24,7 +24,7 @@ progress:
 ## Current Position
 
 Phase: 04 (qr-barcode-scan-to-dismiss-task) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Next: Plan Phase 3 → `/gsd-plan-phase 3`
 Resume file: None
 
@@ -40,7 +40,7 @@ every phase/plan.
 - **Phase:** 4 of 4 (qr/barcode scan to dismiss task)
 - **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
 - **Status:** Ready to execute
-- **Progress:** [████████░░] 79%
+- **Progress:** [█████████░] 86%
 
 ## Phase Map
 
@@ -129,6 +129,7 @@ every phase/plan.
 | Phase 04 P01 | ~6min | 3 tasks | 4 files |
 | Phase 04 P02 | 3min | 2 tasks | 4 files |
 | Phase 04 P04 | 4min | 3 tasks | 5 files |
+| Phase Phase 04 PP05 | 4min | 4 tasks | 10 files |
 
 ## Decisions
 
@@ -145,3 +146,5 @@ every phase/plan.
 - [Phase 04]: [04-01] BUILD-02 zero-ML-Kit gate = new blocking dependency-graph job in test-apk.yml; greps prodReleaseRuntimeClasspath for mlkit|play-services|gms, exit 1 on match; NOT continue-on-error; no emulator job. Authoritative in CI only — toolchain absent locally, OWED on push.
 - [Phase ?]: [04-02] code_match + EscapeHatchController pure seams (SCAN-03/06/07): normalize strips control chars + case-fold (D-MATCH-NORMALIZE), codesMatch empty-stored floor; escape controller single Timer + idempotent _fired, defaults 10/120s (D-ESC-DEFAULT), fireNow ignores enabled (SCAN-07 asymmetry). Both tests owed-green via CI (toolchain absent).
 - [Phase ?]: [04-04] ScanTask ring widget: AlarmTaskType.scan + schema (hidden Registered Code isVisual:false + Escape Hatch default ON); reuses Plan-02 seams by import (codesMatch(normalizeCode) gates onSolve; EscapeHatchController gates Semantics Dismiss) - no logic reimpl. ReaderWidget broad symbology (QR+DataMatrix+EAN/UPC/Code128/Code39/ITF, SCAN-04). no-go = RUNTIME camera-preview failure (onControllerCreated exception) -> fireNow + Surface-4 unlock-to-scan, NOT per-manufacturer; 04-03 spike informs only the doc default (D-LOCK-NOGO-UX). dismissAlarmButton reused; alarm_notification_screen.dart NOT edited; gen-l10n + analyze/test owed via CI; real scan/torch/camera-release/no-go deferred to Plan 06.
+- [Phase ?]: [04-05] Setup/registration half of scan task: inline ScanRegisterCard (route B - ScanRegisterSetting marker dispatched in get_setting_widget over sibling Registered Code StringSetting; NO json_serialize factory entry, D-STORE-FORMAT); ScanRegisterScreen normalizeCode(code.text)->setValue->pop (registration IS test scan, SCAN-02/10); camera at SETUP only (SCAN-08), deny->openAppSettings+resume (D-REG-CAMDENIED); status-only (D-REG-DISPLAY); print leak removed (T-04-13).
+- [Phase ?]: [04-05] D-REG-REQUIRED real save gate (T-04-20): default-no-op CustomizableListItem.validate + AlarmTask.validate override (scanCodeRequired when type==scan && normalizeCode(Registered Code).isEmpty, reuses 04-02 seam) + CustomizeScreen Save blocks pop & SnackBar+SemanticsService.announce (not a silent dead button); threaded via CustomizeListItemScreen default item.validate(ctx); other items unaffected. gen-l10n/analyze owed via CI; real camera/save-block deferred to Plan 06.

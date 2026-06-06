@@ -120,7 +120,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 04-05-PLAN.md — Registration UI: inline "Scan to register" card + register screen + get_setting_widget dispatch + setup-time camera permission/deep-link + remove print payload leak (SCAN-02, SCAN-08, SCAN-10)
+- [x] 04-05-PLAN.md — Registration UI: inline "Scan to register" card + register screen + get_setting_widget dispatch + setup-time camera permission/deep-link + remove print payload leak (SCAN-02, SCAN-08, SCAN-10)
 
 **Wave 4** *(blocked on Waves 2–3)*
 
@@ -135,7 +135,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
 | 2. Snooze Reliability | 2/2 | Complete    | 2026-06-03 |
 | 3. Date, Volume & FAB High-Value Fixes | 3/3 | Complete    | 2026-06-05 |
-| 4. QR/Barcode Scan-to-Dismiss Task | 3/6 | In Progress|  |
+| 4. QR/Barcode Scan-to-Dismiss Task | 4/6 | In Progress|  |
 
 ## Coverage
 
