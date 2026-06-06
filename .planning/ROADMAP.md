@@ -116,7 +116,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 **Wave 2** *(blocked on Wave 1; lock-screen spike + ring-side code run in parallel on disjoint files)*
 
 - [ ] 04-03-PLAN.md — Lock-screen camera de-risk spike (ON-DEVICE, criterion #1): throwaway ReaderWidget on the real over-lock ring path across ≥2 OEMs → documented go/no-go verdict, then revert (D-LOCK-SPIKE-SCOPE/NOGO-UX/SHIP)
-- [ ] 04-04-PLAN.md — Scan task type + schema + ScanTask ring widget + all ARB strings + AlarmTask(scan) JSON round-trip test (SCAN-01, SCAN-03/04/05/06/07/09/11/12)
+- [x] 04-04-PLAN.md — Scan task type + schema + ScanTask ring widget + all ARB strings + AlarmTask(scan) JSON round-trip test (SCAN-01, SCAN-03/04/05/06/07/09/11/12)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -135,7 +135,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 | 1. Storage & Boot Reliability | 3/3 | Done (closed 2026-06-02 by user sign-off; on-device checks accepted) | 2026-06-02 |
 | 2. Snooze Reliability | 2/2 | Complete    | 2026-06-03 |
 | 3. Date, Volume & FAB High-Value Fixes | 3/3 | Complete    | 2026-06-05 |
-| 4. QR/Barcode Scan-to-Dismiss Task | 2/6 | In Progress|  |
+| 4. QR/Barcode Scan-to-Dismiss Task | 3/6 | In Progress|  |
 
 ## Coverage
 

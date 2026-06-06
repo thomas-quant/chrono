@@ -33,18 +33,18 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Feature — QR/Barcode Scan-to-Dismiss Task
 
-- [ ] **SCAN-01**: User can add a "Scan code to dismiss" task to an alarm, selectable alongside the existing dismiss tasks (math/retype/sequence/memory)
+- [x] **SCAN-01**: User can add a "Scan code to dismiss" task to an alarm, selectable alongside the existing dismiss tasks (math/retype/sequence/memory)
 - [ ] **SCAN-02**: During setup, the user scans and registers a specific QR or 1D barcode; the registered code value is stored in the task's settings
 - [x] **SCAN-03**: At ring time, a live camera scanner opens and the alarm only dismisses when the scanned code matches the registered code (matching normalizes both sides identically — trim/control-char/case — so a trailing newline can't cause a false reject)
-- [ ] **SCAN-04**: The scanner accepts QR codes and common 1D barcodes (EAN/UPC/Code128, etc.)
-- [ ] **SCAN-05**: The scan task gates full dismiss only; snooze remains a normal tap
+- [x] **SCAN-04**: The scanner accepts QR codes and common 1D barcodes (EAN/UPC/Code128, etc.)
+- [x] **SCAN-05**: The scan task gates full dismiss only; snooze remains a normal tap
 - [x] **SCAN-06**: An escape-hatch fallback is ON by default — after a configurable threshold (failed attempts and/or elapsed time) a plain dismiss becomes available — and the user can tighten or disable it
 - [x] **SCAN-07**: The escape hatch also triggers on camera-permission-denied and camera-unavailable, so a scan alarm can never become permanently un-dismissable; the fallback is screen-reader reachable
 - [x] **SCAN-08**: Camera permission is requested at setup (never at fire time); `CAMERA` is declared in the manifest with `uses-feature` camera `required="false"`
-- [ ] **SCAN-09**: A torch/flashlight toggle is available in the scanner for dark rooms
+- [x] **SCAN-09**: A torch/flashlight toggle is available in the scanner for dark rooms
 - [ ] **SCAN-10**: A "test scan" is available during setup so the user can confirm the registered code scans before relying on it
-- [ ] **SCAN-11**: The camera is released on every exit path (success, escape hatch, screen background) — no stuck camera/privacy indicator
-- [ ] **SCAN-12**: New user-facing strings are localized (English baseline; other locales via Weblate)
+- [x] **SCAN-11**: The camera is released on every exit path (success, escape hatch, screen background) — no stuck camera/privacy indicator
+- [x] **SCAN-12**: New user-facing strings are localized (English baseline; other locales via Weblate)
 
 ### Platform / Build
 
@@ -111,18 +111,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PR-02 | Phase 3 | Complete |
 | BUILD-01 | Phase 4 | Complete |
 | BUILD-02 | Phase 4 | Complete |
-| SCAN-01 | Phase 4 | Pending |
+| SCAN-01 | Phase 4 | Complete |
 | SCAN-02 | Phase 4 | Pending |
 | SCAN-03 | Phase 4 | Complete |
-| SCAN-04 | Phase 4 | Pending |
-| SCAN-05 | Phase 4 | Pending |
+| SCAN-04 | Phase 4 | Complete |
+| SCAN-05 | Phase 4 | Complete |
 | SCAN-06 | Phase 4 | Complete |
 | SCAN-07 | Phase 4 | Complete |
 | SCAN-08 | Phase 4 | Complete |
-| SCAN-09 | Phase 4 | Pending |
+| SCAN-09 | Phase 4 | Complete |
 | SCAN-10 | Phase 4 | Pending |
-| SCAN-11 | Phase 4 | Pending |
-| SCAN-12 | Phase 4 | Pending |
+| SCAN-11 | Phase 4 | Complete |
+| SCAN-12 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 31 total (BOOT 4, STOR 2, SNZ 5, DATE 2, VOL 1, FAB 1, SCAN 12, BUILD 2, PR 2)
