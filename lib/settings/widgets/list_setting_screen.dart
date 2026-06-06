@@ -87,7 +87,37 @@ class _CustomizableListSettingScreenState<Item extends CustomizableListItem>
             onPressed: () async {
               Item? item = await _openAddBottomSheet();
               if (item == null) return;
-              _listController.addItem(item.copy());
+              // Guard the post-await use of `context` (async gap).
+              if (!mounted) return;
+              final Item newItem = item.copy();
+              // Items that are unusable until configured (a scan task needs a
+              // registered code — D-REG-REQUIRED) must pass the SAME Save gate
+              // as the edit path before being committed. Previously the add
+              // path called addItem() directly, bypassing validate() entirely,
+              // which let an unregistered scan task land in the list and become
+              // un-dismissable at ring time (CR-01). validate() is a no-op
+              // (returns null) for every other item type (themes, timers, math
+              // tasks, etc.), so those keep the unchanged direct-add path.
+              if (newItem.validate(context) != null) {
+                openCustomizeScreen<Item>(
+                  context,
+                  CustomizeListItemScreen<Item>(
+                    item: newItem,
+                    isNewItem: true,
+                    itemPreviewBuilder: (item) =>
+                        widget.setting.getPreviewCard(item),
+                  ),
+                  // onSave only fires when CustomizeScreen actually pops with the
+                  // item, which it does ONLY when validate() returns null. So an
+                  // item that never satisfies its gate is never committed.
+                  onSave: (savedItem) async {
+                    newItem.copyFrom(savedItem);
+                    _listController.addItem(newItem);
+                  },
+                );
+              } else {
+                _listController.addItem(newItem);
+              }
             },
           )
         ],
