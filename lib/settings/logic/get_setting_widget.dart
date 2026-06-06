@@ -1,4 +1,6 @@
+import 'package:clock_app/alarm/widgets/scan_register_card.dart';
 import 'package:clock_app/settings/data/settings_schema.dart';
+import 'package:clock_app/settings/types/scan_register_setting.dart';
 import 'package:clock_app/settings/types/setting.dart';
 import 'package:clock_app/settings/types/setting_action.dart';
 import 'package:clock_app/settings/types/setting_group.dart';
@@ -90,6 +92,13 @@ Widget? getSettingItemWidget(
     return SettingActionCard(
       setting: item,
       showAsCard: showAsCard,
+    );
+  } else if (item is ScanRegisterSetting) {
+    // Route B (D-STORE-FORMAT): mount the inline ScanRegisterCard over the
+    // sibling "Registered Code" StringSetting (which is isVisual:false, so no
+    // default StringSettingCard renders for it). No factory entry needed.
+    return ScanRegisterCard(
+      codeSetting: item.parent!.getSetting("Registered Code") as StringSetting,
     );
   } else if (item is Setting) {
     if (!item.isVisual) return null;

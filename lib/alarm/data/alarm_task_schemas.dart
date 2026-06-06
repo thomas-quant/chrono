@@ -4,6 +4,7 @@ import 'package:clock_app/alarm/widgets/tasks/memory_task.dart';
 import 'package:clock_app/alarm/widgets/tasks/retype_task.dart';
 import 'package:clock_app/alarm/widgets/tasks/scan_task.dart';
 import 'package:clock_app/alarm/widgets/tasks/sequence_task.dart';
+import 'package:clock_app/settings/types/scan_register_setting.dart';
 import 'package:clock_app/settings/types/setting.dart';
 import 'package:clock_app/settings/types/setting_group.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -129,6 +130,14 @@ Map<AlarmTaskType, AlarmTaskSchema> alarmTaskSchemasMap = {
         (context) => AppLocalizations.of(context)!.scanRegisteredCodeTitle,
         "",
         isVisual: false,
+      ),
+      // Marker that mounts the inline ScanRegisterCard (route B — D-STORE-FORMAT,
+      // no factory entry). Dispatched in get_setting_widget.dart to a
+      // ScanRegisterCard reading the sibling "Registered Code" StringSetting
+      // above. Rendered ABOVE the Escape Hatch toggle (D-REG-UI / Surface 1).
+      ScanRegisterSetting(
+        "Register Code",
+        (context) => AppLocalizations.of(context)!.scanRegisteredCodeTitle,
       ),
       // Escape hatch on/off (D-ESC-EXPOSURE). DEFAULT true (SCAN-06) — the
       // ethics-critical "never trap the user" guarantee is on out of the box.
