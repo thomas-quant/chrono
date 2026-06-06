@@ -165,10 +165,14 @@ void main() {
       'DATE-02 range safety: RangeAlarmSchedule produces the same finish '
       'boundary before and after a date-only round-trip (Pitfall 2)',
       () async {
-        // A fixed "now" so getScheduleDateForTime (which reads clock.now()) is
-        // deterministic. The range starts in the future, so the schedule is NOT
-        // finished; the last day must not flip across the round-trip.
-        final fixedNow = DateTime(2026, 6, 1, 8, 0, 0);
+        // Anchor to the REAL wall clock so this test never goes stale:
+        // scheduleAlarm() guards against DateTime.now() (alarms fire in real
+        // wall-clock time), while getScheduleDateForTime() reads clock.now().
+        // Freeze the clock at "today 08:00" so both agree, and place the ranges
+        // relative to today (live range days ahead, elapsed range days behind).
+        final realNow = DateTime.now();
+        final fixedNow =
+            DateTime(realNow.year, realNow.month, realNow.day, 8, 0, 0);
         const time = Time(hour: 9, minute: 0);
 
         Future<bool> finishedFor(List<DateTime> range) async {
@@ -183,8 +187,12 @@ void main() {
           return schedule.isFinished;
         }
 
-        // Original (pre-serialization) range: 2026-06-05 .. 2026-06-10.
-        final original = [DateTime(2026, 6, 5), DateTime(2026, 6, 10)];
+        // Original (pre-serialization) range: a live window 4..9 days ahead of
+        // today (date-only; always in the real future, so scheduleAlarm accepts it).
+        final original = [
+          DateTime(realNow.year, realNow.month, realNow.day + 4),
+          DateTime(realNow.year, realNow.month, realNow.day + 9),
+        ];
         final before = await finishedFor(original);
 
         // Round-trip the same range through the new date-only format.
@@ -200,7 +208,10 @@ void main() {
         // Boundary case: a range that has fully elapsed must be finished both
         // before and after the round-trip (the last-day boundary must not flip
         // a finished range back to live, nor a live one to finished).
-        final past = [DateTime(2026, 5, 1), DateTime(2026, 5, 2)];
+        final past = [
+          DateTime(realNow.year, realNow.month, realNow.day - 30),
+          DateTime(realNow.year, realNow.month, realNow.day - 29),
+        ];
         final pastBefore = await finishedFor(past);
         final pastRt = _dateSetting(past, rangeOnly: true);
         pastRt.loadValueFromJson(pastRt.valueToJson());
