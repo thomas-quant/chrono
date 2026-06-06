@@ -2,6 +2,7 @@ import 'package:clock_app/alarm/types/alarm_task.dart';
 import 'package:clock_app/alarm/widgets/tasks/math_task.dart';
 import 'package:clock_app/alarm/widgets/tasks/memory_task.dart';
 import 'package:clock_app/alarm/widgets/tasks/retype_task.dart';
+import 'package:clock_app/alarm/widgets/tasks/scan_task.dart';
 import 'package:clock_app/alarm/widgets/tasks/sequence_task.dart';
 import 'package:clock_app/settings/types/setting.dart';
 import 'package:clock_app/settings/types/setting_group.dart';
@@ -113,6 +114,34 @@ Map<AlarmTaskType, AlarmTaskSchema> alarmTaskSchemasMap = {
     ]),
     (onSolve, settings) {
       return MemoryTask(onSolve: onSolve, settings: settings);
+    },
+  ),
+  AlarmTaskType.scan: AlarmTaskSchema(
+    (context) => AppLocalizations.of(context)!.scanTask,
+    SettingGroup(
+        "Scan Settings", (context) => AppLocalizations.of(context)!.scanTask, [
+      // Registered code: hidden raw value (D-REG-DISPLAY status-only /
+      // privacy). isVisual:false keeps the raw value out of the auto-rendered
+      // settings UI — the user-facing affordance is the Plan 05 registration
+      // card, never the raw string.
+      StringSetting(
+        "Registered Code",
+        (context) => AppLocalizations.of(context)!.scanRegisteredCodeTitle,
+        "",
+        isVisual: false,
+      ),
+      // Escape hatch on/off (D-ESC-EXPOSURE). DEFAULT true (SCAN-06) — the
+      // ethics-critical "never trap the user" guarantee is on out of the box.
+      SwitchSetting(
+        "Escape Hatch",
+        (context) => AppLocalizations.of(context)!.scanEscapeHatch,
+        true,
+        getDescription: (context) =>
+            AppLocalizations.of(context)!.scanEscapeHatchDescription,
+      ),
+    ]),
+    (onSolve, settings) {
+      return ScanTask(onSolve: onSolve, settings: settings);
     },
   ),
 };
