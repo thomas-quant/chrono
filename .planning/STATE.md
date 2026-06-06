@@ -23,39 +23,47 @@ progress:
 
 ## Current Position
 
-Phase: 04 (qr-barcode-scan-to-dismiss-task) — EXECUTING
-Plan: 5 of 6
-Next: Plan Phase 3 → `/gsd-plan-phase 3`
+Phase: 04 (qr-barcode-scan-to-dismiss-task) — EXECUTING (authorable plans complete; on-device gates deferred)
+Plans complete this phase: 4 of 6 (04-01, 04-02, 04-04, 04-05)
+Deferred (on-device only — no device/toolchain in this env): 04-03 lock-screen camera spike, 04-06 end-to-end sign-off
+Next: run the two on-device gates on hardware (build the dev APK in CI first), then phase verification + completion
 Resume file: None
 
-**Phase 3 discussion outcome (2026-06-05):** Date → store as local date-only `YYYY-MM-DD`, auto-correct
-legacy epoch on load (contingent on confirming `table_calendar` midnight-vs-noon UTC). Volume/FAB →
-**reimplement #467/#466 independently, sole credit (no contributor attribution)** — DEVIATES from
-PR-01/PR-02 + ROADMAP success-criterion #4 ("credit the contributor"); reword those at next transition.
-FAB → shared bottom-clearance fix at the list/FAB layer (all ~12 screens). Tests → all three get CI
-coverage (date unit, volume-cancel via extracted ramp controller, narrow FAB widget test). **New project
-policy:** `CLAUDE.md` now defaults all CI-runnable testing (unit + headless widget) to GitHub Actions for
-every phase/plan.
+**Phase 4 execution outcome (2026-06-06):** All four authorable plans landed on `master`.
+04-01 build gate (`flutter_zxing` 2.2.1 exact pin, minSdk 23, CAMERA manifest, blocking zero-ML-Kit CI
+graph gate). 04-02 pure seams (`normalizeCode`/`codesMatch` + `EscapeHatchController`) with headless
+tests. 04-04 ring-time `ScanTask` (`AlarmTaskType.scan`, `ReaderWidget` dismiss gated by registered
+code, escape hatch / torch / camera-release / unlock-to-scan, JSON round-trip test). 04-05
+setup/registration half (inline scan-to-register card, setup-time camera permission, D-REG-REQUIRED
+save gate, `print` leak removed). **Code review (quick depth) found 2 BLOCKERs — both fixed:** CR-01 the
+D-REG-REQUIRED save gate was bypassed on the list ADD path (a code-less scan task could be added →
+un-dismissable at ring time with the escape hatch off) → the add path now routes validating items
+through the gated customize screen (commit `c687226`); CR-02 `ScanTask` had no re-entrancy latch on
+`onSolve` (double-dismiss) → one-shot `_solved` latch added (`205db0a`). WR-04 (CI analyze still pinned
+to Phase-2 files) also fixed → repointed to the Phase-4 scan files (`a509ccc`). Open review items:
+WR-01 (torch graceful-no-flash dead code — needs on-device/zxing-API resolution), WR-02 (vibrate no
+`hasVibrator()` guard), WR-03 (mitigated by `scanDelay`), WR-05 (zero-ML-Kit gate runs only on
+`workflow_dispatch`) + 4 INFO — all tracked open in `04-REVIEW.md`.
 
-- **Phase:** 4 of 4 (qr/barcode scan to dismiss task)
-- **Closure basis (Phase 2):** Plan 02-01 fixed the snooze state machine at source (SNZ-01..05); Plan 02-02 authored the CI-runnable regression suite (`test/alarm/types/alarm_snooze_test.dart`) and repointed `test-apk.yml`'s analyze gate to the Phase-2 files. `flutter test` (via `tests.yml` on push) and the scoped `flutter analyze` (via `gh workflow run test-apk.yml`) are OWED via CI — no push/dispatch performed (both remotes outward-facing). An end-of-phase on-device snooze→dismiss smoke is the one remaining human gate.
-- **Status:** Ready to execute
-- **Progress:** [█████████░] 86%
+- **Phase:** 4 of 4 (qr/barcode scan-to-dismiss task) — authorable-complete, on-device gates owed
+- **Status:** Authorable work complete + code-review blockers fixed; CI + on-device gates owed (see `.planning/MANUAL-VERIFICATION-LOG.md`)
+- **Progress:** [████████░░] 75% (12/14 plans)
 
 ## Phase Map
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 1 | Storage & Boot Reliability | BOOT-01..04, STOR-01..02 (6) | ✅ Done (closed 2026-06-02 by user sign-off; on-device checks accepted, not independently verified) |
-| 2 | Snooze Reliability | SNZ-01..05 (5) | 🟡 Code-complete (both plans committed) — ready for verification (CI test/analyze + on-device smoke owed) |
-| 3 | Date, Volume & FAB High-Value Fixes | DATE-01..02, VOL-01, FAB-01, PR-01..02 (6) | Not started |
-| 4 | QR/Barcode Scan-to-Dismiss Task | BUILD-01..02, SCAN-01..12 (14) | Not started |
+| 2 | Snooze Reliability | SNZ-01..05 (5) | ✅ Done (source-complete; CI test/analyze + on-device snooze smoke owed) |
+| 3 | Date, Volume & FAB High-Value Fixes | DATE-01..02, VOL-01, FAB-01, PR-01..02 (6) | ✅ Done (source-complete; CI test/analyze + on-device checks owed) |
+| 4 | QR/Barcode Scan-to-Dismiss Task | BUILD-01..02, SCAN-01..12 (14) | 🟡 Authorable-complete (4/6 plans + review blockers fixed); 04-03 spike + 04-06 e2e deferred (on-device); CI gates owed |
 
 ## Performance Metrics
 
-- **Phases complete:** 0/4
-- **Requirements delivered (source-level):** 3/31 (STOR-01, STOR-02, BOOT-04 — BOOT-04/STOR-02 now have both their detection (01-01) and user-facing notice (01-03); BOOT-01/02/03 source-complete in 01-02 pending on-device sign-off)
-- **Plans fully complete:** 1 (01-01 Storage Hardening, ~5 min, 3 tasks, 7 files); **code-complete but checkpoint-pending:** 2 (01-02, 01-03)
+- **Phases complete:** 3/4 (Phase 4 authorable-complete; on-device gates deferred)
+- **Plans complete (source-level):** 12/14 — Phases 1-3 (8) + Phase 4 authorable (04-01, 04-02, 04-04, 04-05)
+- **Phase-4 requirements source-complete:** BUILD-01/02, SCAN-08 (04-01); SCAN-03/06/07 (04-02); SCAN-01/04/05/12 source (04-04); SCAN-02/10 (04-05). SCAN-09 + SCAN-11 behavioral confirmation and criterion-#1 lock-screen spike = on-device gates (04-06 / 04-03, deferred).
+- **All Phase-4 Flutter gates owed via CI/on-device** — Flutter/Dart toolchain absent locally; no push performed.
 - **Milestone started:** 2026-05-30
 
 ## Accumulated Context
@@ -108,13 +116,13 @@ every phase/plan.
 
 ## Session Continuity
 
-- **Last action:** Executed Phase 2 Plan 02 (wave 2 — snooze regression suite + analyze repoint). Both tasks autonomous, committed atomically: `6e332c2` new `test/alarm/types/alarm_snooze_test.dart` (SNZ-01..05 — exact `now+30s` under `withClock(Clock.fixed(...))` enabled by Plan-01's `clock.now()`; once + finished-dates snooze→dismiss deactivation #457; over-max→dismiss; `snoozeCount` `toJson↔fromJson` round-trip; SNZ-01/05 survives an unrelated `update()` still enabled+snoozed; asserts on `Alarm` flags only — OS no-ops under `FLUTTER_TEST`); `09dc3ec` repointed `test-apk.yml`'s informational `flutter analyze` gate from the nine Phase-1 files to the four Phase-2 paths (`alarm.dart`, `alarm_isolate.dart`, `alarm_settings_schema.dart`, `alarm_snooze_test.dart`), keeping `continue-on-error: true` and all other steps unchanged. No deviations. No `lib/` or `pubspec.yaml` change. All source-level verify assertions pass.
-- **Next action:** Verify Phase 2, then plan Phase 3 (Date, Volume & FAB High-Value Fixes — DATE-01..02, VOL-01, FAB-01, PR-01..02).
-- **Watch (owed CI/human gates — toolchain absent here, NO push performed):** Plan 02's `flutter test` runs via `tests.yml` on push (the authoritative behavioral gate — the new `Alarm snooze` cases run there); the scoped `flutter analyze` (now pointed at the Phase-2 files) + the sideloadable `chrono-dev-release-apk` come from `gh workflow run test-apk.yml`. Owed commands (user-authorized only — both remotes outward-facing): `git push <remote> <phase-branch>` then `gh run watch` (capture the `tests.yml` run id/result); `gh workflow run test-apk.yml --ref <phase-branch>` then `gh run watch` (read the Analyze log for new issues; download the APK). Plus the end-of-phase on-device snooze→dismiss smoke (once-alarm dismiss does not reappear; fractional snooze re-rings ~30s; over-max dismisses; normal snooze does not silently disable). Phase-1 gates (`01-02`/`01-03` on-device + l10n/analyze) still owed from the prior phase.
+- **Last action (2026-06-06):** Executed Phase 4 authorable plans via `/gsd-execute-phase 4`. User chose "build authorable, defer both on-device gates." Ran 04-01, 04-02, 04-04, 04-05 sequentially on `master` (no worktree isolation — merge-back reliability), each with atomic commits + own STATE/ROADMAP updates. Ran the code-review gate (quick): 2 BLOCKERs (CR-01 add-path save-gate bypass → un-dismissable alarm; CR-02 ScanTask onSolve re-entrancy) + WR-04 (stale CI analyze scope) verified and FIXED via gsd-code-fixer (`c687226`, `205db0a`, `a509ccc`, REVIEW resolution `7947d1d`). Skipped 04-03 (lock-screen spike) and 04-06 (on-device e2e) per user — neither runnable without a device + Flutter toolchain. Phase NOT marked complete (2 plans remain).
+- **Next action:** On hardware: build the dev APK via CI (`test-apk.yml`), then run 04-03 (lock-screen camera spike across ≥2 OEMs → `04-LOCKSCREEN-SPIKE.md` + revert the throwaway scaffold) and 04-06 (full scan-to-dismiss e2e matrix). Then re-run phase verification + `phase.complete`. Any on-device defect → `/gsd-plan-phase 4 --gaps`.
+- **Watch (owed CI/human gates — toolchain absent here, NO push performed):** Phase-4 `flutter test` (`tests.yml` — code_match, escape_hatch_controller, alarm_task_scan), `flutter gen-l10n` (new `scan*` ARB getters), `flutter analyze` (now repointed to the Phase-4 scan files), the dev-APK native `flutter_zxing` build, and the BUILD-02 zero-ML-Kit prod-graph gate are all OWED via CI (user authorizes the push/dispatch — both remotes outward-facing). On-device: 04-03 spike + 04-06 e2e (real camera over a fired alarm, torch SCAN-09, camera-release SCAN-11, escape-never-traps, no-go unlock-to-scan). Open code-review items WR-01/02/03/05 + 4 INFO tracked in `04-REVIEW.md`. Prior-phase gates (Phase 1-3 CI test/analyze + on-device smokes) also still owed. See `.planning/MANUAL-VERIFICATION-LOG.md`.
 
 ---
 *State initialized: 2026-05-30*
-*Last updated: 2026-06-02 after executing 02-01-PLAN.md (all 3 tasks autonomous + committed; SNZ-01..05 source-complete; CI/test gates owed via Plan 02 + CI)*
+*Last updated: 2026-06-06 after executing Phase 4 authorable plans (04-01/02/04/05) + code-review blocker fixes (CR-01/CR-02/WR-04); 04-03 spike + 04-06 e2e deferred (on-device); phase not yet complete; CI/on-device gates owed.*
 
 ## Performance Metrics
 
@@ -129,7 +137,8 @@ every phase/plan.
 | Phase 04 P01 | ~6min | 3 tasks | 4 files |
 | Phase 04 P02 | 3min | 2 tasks | 4 files |
 | Phase 04 P04 | 4min | 3 tasks | 5 files |
-| Phase Phase 04 PP05 | 4min | 4 tasks | 10 files |
+| Phase 04 P05 | 4min | 4 tasks | 10 files |
+| Phase 04 review-fix | 3min | CR-01/CR-02/WR-04 | 3 files |
 
 ## Decisions
 

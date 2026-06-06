@@ -10,7 +10,78 @@ points straight at the suspect change.
   aggregates them. This file is the curated human-readable running list.
 - Status keys: `[ ]` pending · `[x]` verified OK · `[!]` mismatch/error (note it)
 
-_Last updated: 2026-06-05 (after Phase 3 completion)_
+_Last updated: 2026-06-06 (after Phase 4 authorable execution — on-device gates deferred)_
+
+---
+
+## Phase 4 — QR/Barcode Scan-to-Dismiss Task (authorable-complete 2026-06-06; NOT closed)
+
+Authorable plans 04-01, 04-02, 04-04, 04-05 landed on `master`. 04-03 (lock-screen spike) and 04-06
+(end-to-end e2e) are inherently on-device and were **deferred** — no device or Flutter/Dart toolchain in
+the execution environment, so nothing here was run or claimed locally. Code-review BLOCKERs CR-01
+(add-path save-gate bypass) and CR-02 (ScanTask re-entrancy) were found and fixed; WR-04 (CI analyze
+scope) fixed; WR-01/02/03/05 + INFO left open.
+Source: `04-01..05-SUMMARY.md`, `04-REVIEW.md`, `04-03-PLAN.md`, `04-06-PLAN.md`.
+
+### A. CI gates owed (authoritative — run on next push; user authorizes, both remotes outward-facing)
+- [ ] **`tests.yml` green** on the new pure-seam + round-trip tests:
+  `test/alarm/logic/code_match_test.dart`, `test/alarm/logic/escape_hatch_controller_test.dart`,
+  `test/alarm/types/alarm_task_scan_test.dart`. (SCAN-03/06/07 + SCAN-01 behavioral GREEN.)
+  Observed (CI run link / result): …
+- [ ] **`flutter gen-l10n` succeeds** — the new `scan*` ARB keys generate their `AppLocalizations`
+  getters (referenced by `scan_task.dart` / `alarm_task_schemas.dart` / registration UI) before compile.
+  Observed: …
+- [ ] **`flutter analyze` (test-apk.yml, now repointed to the Phase-4 scan files)** — read the log for
+  NEW issues (incl. WR-01 torch dead-code). Informational/continue-on-error.
+  Observed: …
+- [ ] **Dev-APK native build compiles `flutter_zxing`** (FFI/NDK). If CI flags an NDK/CMake mismatch,
+  set `ndkVersion 27.0.12077973` (recorded contingency, currently `flutter.ndkVersion`).
+  Observed: …
+- [ ] **BUILD-02 zero-ML-Kit prod-graph gate PASSES** (blocking job greps `prodReleaseRuntimeClasspath`
+  for `mlkit|play-services|gms`, expects none). NOTE WR-05: this job currently triggers only on
+  `workflow_dispatch`, not push/PR — run it explicitly until/unless that's changed.
+  Observed: …
+
+### B. On-device gate — 04-03 lock-screen camera spike (criterion #1; never auto-approvable)
+- [ ] **Live `flutter_zxing` `ReaderWidget` preview over a SECURE keyguard, ≥2 OEMs.** Add the throwaway
+  `// SPIKE` scaffold (04-03 Task 1), build the dev APK, fire a real alarm over a PIN/pattern lock, and
+  record per device: does the preview render (frames moving)? does `onScan` decode? → GO / NO-GO /
+  REQUIRES-UNLOCK. Write `04-LOCKSCREEN-SPIKE.md` (one row per device + verdict), then REVERT the
+  scaffold (`git diff alarm_notification_screen.dart` empty). Per D-LOCK-SHIP the feature ships
+  regardless — the verdict only sets the expected default per device class.
+  Observed: …
+
+### C. On-device gate — 04-06 end-to-end scan-to-dismiss (SCAN-09/11 + assembled flow; never auto-approvable)
+- [ ] **Register at setup (SCAN-02/08/10):** add the "Scan code to dismiss" task → camera permission
+  requested AT SETUP → scan a QR + a 1D barcode → card shows "✓ Code registered" (never the raw value).
+  Deny-then-deep-link-to-settings path resumes. **Also confirm CR-01 fix:** a scan task with NO
+  registered code cannot be saved on EITHER the add or the edit path.
+  Observed: …
+- [ ] **Match → dismiss (SCAN-03/05):** real alarm fires → swipe → scanner opens → registered code
+  dismisses; a trailing-newline/case variant still dismisses; snooze works WITHOUT entering the scanner.
+  **Also confirm CR-02 fix:** a held/duplicate matching frame dismisses exactly once (no double-advance).
+  Observed: …
+- [ ] **Wrong scan + escape (SCAN-06/07):** wrong code → haptic + transient feedback, no dismiss; after
+  ~120s or ~10 wrong attempts a TalkBack-reachable Dismiss appears; camera denied/disabled → escape
+  Dismiss appears INSTANTLY.
+  Observed: …
+- [ ] **Torch (SCAN-09):** toggles in a dark room; on a no-flash device degrades gracefully
+  (scanner keeps running). NOTE WR-01: the graceful-no-flash message is currently unreachable code —
+  confirm actual torch behavior and decide whether a custom torch control is needed.
+  Observed: …
+- [ ] **Camera release (SCAN-11):** after every exit (match-dismiss, escape-dismiss, background) the OS
+  privacy indicator clears and the next alarm's scanner can acquire the camera.
+  Observed: …
+- [ ] **No-go OEM degradation (D-LOCK-NOGO-UX):** on a spike-flagged no-go device the "unlock to scan"
+  prompt shows over the keyguard, the alarm keeps ringing until unlocked, and the escape hatch still
+  fires underneath (never trapped).
+  Observed: …
+
+### D. Open code-review items (tracked in 04-REVIEW.md — not blockers)
+- [ ] WR-01 torch graceful-no-flash is dead code (needs on-device/zxing-API resolution — see C torch).
+- [ ] WR-02 `Vibration.vibrate` has no `hasVibrator()` guard.
+- [ ] WR-03 overlapping wrong-code `Future.delayed` flashes (mitigated by `scanDelay` 1000ms > 600ms).
+- [ ] WR-05 BUILD-02 zero-ML-Kit gate triggers only on `workflow_dispatch` (see A) — decide push/PR trigger.
 
 ---
 
