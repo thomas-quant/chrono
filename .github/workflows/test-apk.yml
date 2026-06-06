@@ -145,10 +145,19 @@ jobs:
 
       # BUILD-02 HARD GATE: resolve the prod-flavor release runtime classpath and
       # FAIL the build if any mlkit / play-services / gms artifact is present.
+      # This Flutter project does not commit the bare `gradlew` wrapper script, and
+      # a pub-get-only checkout has no android/local.properties — so a direct
+      # `./gradlew` call exits 127 (command not found). `flutter build --config-only`
+      # generates local.properties + the Gradle files WITHOUT assembling/signing,
+      # then we invoke the committed wrapper jar directly via its main class (exactly
+      # what `gradlew` does) so we run the project's PINNED Gradle 7.6.4, not a stray
+      # system gradle. A grep MATCH is the FAIL condition (exit 1); zero matches PASS.
       - name: Verify zero ML Kit in prod release dependency graph
         run: |
+          flutter build apk --release --flavor prod --config-only
           cd android
-          ./gradlew :app:dependencies --configuration prodReleaseRuntimeClasspath > deps.txt
+          java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain \
+            :app:dependencies --configuration prodReleaseRuntimeClasspath > deps.txt
           if grep -Eiq 'mlkit|play-services|gms' deps.txt; then
             echo "FAIL: non-FOSS dependency present in prodReleaseRuntimeClasspath:"
             grep -Ei 'mlkit|play-services|gms' deps.txt
