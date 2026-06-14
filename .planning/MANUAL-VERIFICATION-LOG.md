@@ -27,6 +27,31 @@ build failure (debug session, resolved).
 Source: `04-01..05-SUMMARY.md`, `04-REVIEW.md`, `04-03-PLAN.md`, `04-06-PLAN.md`,
 `.planning/debug/resolved/camerax-apk-build-fail.md`.
 
+### On-device results — 2026-06-14 (first hardware run; 2 GAPS → routed to /gsd-plan-phase 4 --gaps)
+Tester ran the fresh dev APK (run 27489898566) on a physical device.
+- [x] **Registration scan WORKS** — camera preview renders and a barcode decodes in the registration
+  screen (`scan_register_screen.dart`, a `Scaffold(body: ReaderWidget)` — bounded full screen). Confirms
+  the camera stack + `flutter_zxing` + the camerax cap are fundamentally working on device.
+- [!] **GAP-A — no camera in "try out" AND at ring-time scan-to-dismiss.** Root cause CONFIRMED by static
+  analysis: `ScanTask` (`scan_task.dart`) sizes its scanner with an internal `Expanded`, but BOTH hosts
+  place the task widget as a NON-flex child of a `Column` → unbounded height → the `Expanded` collapses
+  the `ReaderWidget` to zero height → no camera (silent in a release APK; no red layout overlay).
+  Hosts: `try_alarm_task_screen.dart:14-20` (`body: Column(children:[builder()])`) and
+  `alarm_notification_screen.dart:150-157` (`Expanded > Column > [_currentWidget]`). Registration is
+  unaffected (ReaderWidget is the Scaffold body); the math task is unaffected (intrinsic-height, no
+  Expanded). FIX (surgical, ScanTask-only — do NOT touch the shared hosts or the math task breaks):
+  give the scanner a definite height instead of `Expanded`, e.g. `SizedBox(height: MediaQuery.of(context)
+  .size.height * 0.6, child: scanner)`, so ScanTask is intrinsic-height and renders as a bare Column child.
+- [!] **GAP-B — alarm did not appear over the lock screen** (had to unlock + tap the notification). Separate
+  subsystem: full-screen-intent / `showWhenLocked` over a secure keyguard. Likely Android 14+
+  `USE_FULL_SCREEN_INTENT` restriction and/or OEM keyguard policy (this is the 04-03 spike question). By
+  design the feature still ships (escape hatch + unlock-to-scan cover no-go devices); needs investigation
+  to determine whether it's a grantable-permission/manifest fix or expected OEM behavior. Different root
+  cause from GAP-A.
+
+Re-verification of the §C matrix is BLOCKED on GAP-A (the scanner must render before match/wrong-scan/
+torch/camera-release can be exercised). After the gap fix lands + a fresh APK, re-run §B/§C below.
+
 ### A. CI gates — VERIFIED GREEN 2026-06-06 (pushed to thomas-quant/chrono master; user-authorized)
 - [x] **`tests.yml` green** on the new pure-seam + round-trip tests
   (`code_match_test`, `escape_hatch_controller_test`, `alarm_task_scan_test` — SCAN-03/06/07 + SCAN-01).
