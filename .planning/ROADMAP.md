@@ -106,7 +106,7 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
   4. The alarm can never become un-dismissable: an escape-hatch fallback is ON by default (a plain dismiss after a configurable failed-attempt and/or elapsed-time threshold), it also triggers on camera-permission-denied and camera-unavailable, it is screen-reader reachable, camera permission is requested at setup (never at fire time) with `CAMERA` + `uses-feature required="false"` in the manifest, and the camera is released on every exit path (no stuck privacy indicator).
   5. A torch/flashlight toggle is available in the scanner for dark rooms, and all new user-facing strings are localized (English baseline; other locales via Weblate).
 
-**Plans**: 6 plans
+**Plans**: 8 plans (6 original + 2 gap-closure)
 
 **Wave 1** *(parallel — build gate + pure seams have no file overlap)*
 
@@ -125,6 +125,11 @@ pulled forward as an explicit early de-risk inside that phase, and gated behind 
 **Wave 4** *(blocked on Waves 2–3)*
 
 - [ ] 04-06-PLAN.md — On-device end-to-end verification: real ring scan, wrong-scan+escape, torch (SCAN-09), camera-release/no stuck indicator (SCAN-11), no-go OEM degradation
+
+**Wave 5 — Gap Closure** *(from 04-VERIFICATION.md on-device UAT; 04-07 and 04-08 are independent — disjoint files, both run in parallel; each ends in a blocking on-device checkpoint)*
+
+- [ ] 04-07-PLAN.md — Fix ScanTask camera rendering (GAP-A): make ScanTask self-sizing (MediaQuery SizedBox, replacing the host-dependent Expanded) so the ring-time + Try-out scanner renders + dismisses; headless layout regression test; on-device re-test (SCAN-03/04/05/06/07/09/11)
+- [ ] 04-08-PLAN.md — Lock-screen full-screen-intent investigation/fix (GAP-B): audit USE_FULL_SCREEN_INTENT (manifest + Android-14 runtime grant) + awesome_notifications config + FlutterShowWhenLocked; fix or document as expected OEM no-go; 04-LOCKSCREEN-SPIKE.md verdict (subsumes 04-03) (SCAN-07/11, D-LOCK-SHIP)
 
 **UI hint**: yes
 
