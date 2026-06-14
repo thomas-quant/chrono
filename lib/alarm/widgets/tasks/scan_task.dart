@@ -179,9 +179,23 @@ class _ScanTaskState extends State<ScanTask> {
     final TextTheme textTheme = theme.textTheme;
     final AppLocalizations localizations = AppLocalizations.of(context)!;
 
+    // GAP-A fix (D-RING-LAYOUT): give the scanner / unlock branch a DEFINITE
+    // height derived from the screen so ScanTask is self-sizing and no longer
+    // depends on a bounded-Flex host. Both hosts (try_alarm_task_screen.dart,
+    // alarm_notification_screen.dart) place this widget as a NON-flex child of a
+    // Column → unbounded height. The previous top-level `Expanded` collapsed the
+    // `ReaderWidget`'s `Positioned.fill` Stack to zero height under that unbounded
+    // constraint (silent in a release APK), so no camera pixels rendered. A
+    // MediaQuery-derived SizedBox resolves the Stack against a real height and is
+    // applied to BOTH branches so the unlock-to-scan degradation is not
+    // zero-height either. ScanTask-ONLY change — the shared hosts are untouched
+    // (editing them would break the math/retype task widgets in the same slot).
+    final double scannerHeight = MediaQuery.of(context).size.height * 0.6;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             localizations.scanRingInstruction,
@@ -189,7 +203,8 @@ class _ScanTaskState extends State<ScanTask> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16.0),
-          Expanded(
+          SizedBox(
+            height: scannerHeight,
             child: _cameraFailed
                 ? _buildUnlockToScanPrompt(
                     context, colorScheme, textTheme, localizations)
