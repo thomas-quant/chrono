@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-06T00:32:33.352Z"
+last_updated: "2026-06-14T07:30:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 14
+  total_plans: 16
   completed_plans: 12
   percent: 75
 ---
@@ -23,11 +23,12 @@ progress:
 
 ## Current Position
 
-Phase: 04 (qr-barcode-scan-to-dismiss-task) — EXECUTING (authorable plans complete; on-device gates deferred)
-Plans complete this phase: 4 of 6 (04-01, 04-02, 04-04, 04-05)
-Deferred (on-device only — no device/toolchain in this env): 04-03 lock-screen camera spike, 04-06 end-to-end sign-off
-Next: run the two on-device gates on hardware (build the dev APK in CI first), then phase verification + completion
-Resume file: None
+Phase: 04 (qr-barcode-scan-to-dismiss-task) — EXECUTING
+Plan: 04-07 (GAP-A ScanTask camera-render fix) — PAUSED at human checkpoint (Task 4)
+Plans complete this phase: 4 of 6 source-complete (04-01, 04-02, 04-04, 04-05); 04-07 authorable tasks 1-3 landed (gap_closure, NOT yet closed)
+Deferred (on-device only — no device/toolchain in this env): 04-03 lock-screen camera spike, 04-06 end-to-end sign-off, 04-08 GAP-B lock-screen FSI
+Next: run 04-07 Task 4 on-device re-test (see Session Continuity) — confirm camera preview renders in Try-out + ring-time AND a registered-code scan dismisses; then re-exercise truths #9/#10/#11 and close GAP-A
+Resume file: .planning/phases/04-qr-barcode-scan-to-dismiss-task/04-07-PLAN.md (Task 4)
 
 **Phase 4 execution outcome (2026-06-06):** All four authorable plans landed on `master`.
 04-01 build gate (`flutter_zxing` 2.2.1 exact pin, minSdk 23, CAMERA manifest, blocking zero-ML-Kit CI
@@ -46,7 +47,7 @@ WR-01 (torch graceful-no-flash dead code — needs on-device/zxing-API resolutio
 `workflow_dispatch`) + 4 INFO — all tracked open in `04-REVIEW.md`.
 
 - **Phase:** 4 of 4 (qr/barcode scan-to-dismiss task) — authorable-complete, on-device gates owed
-- **Status:** Authorable work complete + code-review blockers fixed; **CI GREEN** (212 tests, BUILD-02 F-Droid zero-ML-Kit gate, dev APK builds — pushed to fork `thomas-quant/chrono`); on-device gates 04-03/04-06 still owed (see `.planning/MANUAL-VERIFICATION-LOG.md`)
+- **Status:** Executing Phase 04
 - **Progress:** [████████░░] 75% (12/14 plans)
 
 ## Phase Map
@@ -116,7 +117,9 @@ WR-01 (torch graceful-no-flash dead code — needs on-device/zxing-API resolutio
 
 ## Session Continuity
 
-- **Last action (2026-06-06):** Executed Phase 4 authorable plans via `/gsd-execute-phase 4`. User chose "build authorable, defer both on-device gates." Ran 04-01, 04-02, 04-04, 04-05 sequentially on `master` (no worktree isolation — merge-back reliability), each with atomic commits + own STATE/ROADMAP updates. Ran the code-review gate (quick): 2 BLOCKERs (CR-01 add-path save-gate bypass → un-dismissable alarm; CR-02 ScanTask onSolve re-entrancy) + WR-04 (stale CI analyze scope) verified and FIXED via gsd-code-fixer (`c687226`, `205db0a`, `a509ccc`, REVIEW resolution `7947d1d`). Skipped 04-03 (lock-screen spike) and 04-06 (on-device e2e) per user — neither runnable without a device + Flutter toolchain. Phase NOT marked complete (2 plans remain).
+- **Last action (2026-06-14):** Executed gap-closure plan 04-07 (GAP-A — ScanTask renders no camera at ring-time / Try-out) authorable tasks on `master` (sequential, no worktree). Task 1 (`05a2ef2`): made `ScanTask` self-sizing — replaced the top-level `Expanded` (which collapsed the `ReaderWidget` `Positioned.fill` Stack to zero height under the hosts' unbounded Column) with a `SizedBox(height: MediaQuery.size.height * 0.6)` applied to BOTH the scanner and the unlock-to-scan branch; `Column` → `mainAxisSize.min`; layout-only — instruction headline, escape Dismiss (both branches), `_solved` one-shot latch, wrong-scan flash, torch copy, and the privacy invariant (decoded payload never logged/printed/rendered) all unchanged; shared hosts (`try_alarm_task_screen.dart`, `alarm_notification_screen.dart`) UNTOUCHED. Task 2 (`64691db`): added `test/alarm/widgets/tasks/scan_task_layout_test.dart` — mounts ScanTask as a non-flex child of an unbounded Column (exact host condition), asserts no overflow (`takeException() isNull`) + finite non-zero height; asserts the OUTER subtree (ReaderWidget camera can't init headlessly — documented). Task 3 (`74e3435`): added the layout test to `test-apk.yml`'s curated analyze list (`scan_task.dart` already present, not duplicated). **No `flutter test`/`analyze` run locally (toolchain absent) — GREEN owed via CI (`tests.yml` auto-discovers all of `test/`); never claimed locally green.** **PAUSED at Task 4** (blocking-human on-device re-test) — GAP-A is NOT closed yet.
+- **Next action (04-07 Task 4 — blocking-human, never auto-approvable):** Dispatch a fresh dev APK (`gh workflow run test-apk.yml -R thomas-quant/chrono`), confirm BUILD-02 zero-ML-Kit gate + `tests.yml` (incl. `scan_task_layout_test.dart`) GREEN, install on a physical device. On device: (3) "Try out" the scan task → CONFIRM a live camera preview now renders (frames moving), not blank/black; (4) fire a real alarm → CONFIRM the camera preview renders + scan the registered code → CONFIRM the alarm DISMISSES (incl. trailing-newline/case variant; snooze still works without scanner; held/duplicate frame dismisses exactly once, CR-02); (5) re-exercise the GAP-A-blocked truths — wrong-scan+escape (#9), torch toggle / graceful no-flash (#10/SCAN-09), camera released on every exit / no stuck indicator (#11/SCAN-11), and the no-go unlock-to-scan degradation — and record each in `.planning/MANUAL-VERIFICATION-LOG.md` §C; (6) if the preview still doesn't render, capture which branch showed + device model and report back. **Resume signal:** type "approved" once the preview renders in Try-out + ring-time AND a registered-code scan dismisses, or describe what still fails (device model + branch). GAP-A is closed only after the human confirms; do NOT write 04-07-SUMMARY.md or mark 04-07 complete in ROADMAP until then. Then re-run phase verification; if any defect → `/gsd-plan-phase 4 --gaps`.
+- **Prior session action (2026-06-06):** Executed Phase 4 authorable plans via `/gsd-execute-phase 4`. User chose "build authorable, defer both on-device gates." Ran 04-01, 04-02, 04-04, 04-05 sequentially on `master` (no worktree isolation — merge-back reliability), each with atomic commits + own STATE/ROADMAP updates. Ran the code-review gate (quick): 2 BLOCKERs (CR-01 add-path save-gate bypass → un-dismissable alarm; CR-02 ScanTask onSolve re-entrancy) + WR-04 (stale CI analyze scope) verified and FIXED via gsd-code-fixer (`c687226`, `205db0a`, `a509ccc`, REVIEW resolution `7947d1d`). Skipped 04-03 (lock-screen spike) and 04-06 (on-device e2e) per user — neither runnable without a device + Flutter toolchain. Phase NOT marked complete (2 plans remain).
 - **Next action:** Download the CI dev APK (`chrono-dev-release-apk` from test-apk.yml run 27051911373, on `thomas-quant/chrono`; expires 2026-06-13), install on hardware, then run 04-03 (lock-screen camera spike across ≥2 OEMs → `04-LOCKSCREEN-SPIKE.md` + revert the throwaway scaffold) and 04-06 (full scan-to-dismiss e2e matrix). Then re-run phase verification + `phase.complete`. Any on-device defect → `/gsd-plan-phase 4 --gaps`.
 - **CI status (2026-06-06, pushed to fork — VERIFIED GREEN):** `tests.yml` run 27051911662 = 212/212; `test-apk.yml` run 27051911373 = success (BUILD-02 zero-ML-Kit gate PASS, dev APK built + uploaded). Three issues surfaced+fixed during the push: Phase-3 DATE-02 wall-clock-fragile test (commit 6780bf5), BUILD-02 gate exit-127/missing-gradlew (a509ccc/5964e4b), and the dev-APK `camera_android_camerax` SurfaceProducer build failure (capped to `<0.6.6`, commit 21a7f11; debug session resolved).
 - **Watch (still owed):** On-device 04-03 spike + 04-06 e2e (real camera over a fired alarm, torch SCAN-09, camera-release SCAN-11, escape-never-traps, no-go unlock-to-scan). Open code-review items WR-01/02/03/05 + 4 INFO (`04-REVIEW.md`). Follow-up: commit the CI-regenerated `pubspec.lock` to harden the camerax/zxing pins (currently re-resolved each CI run). Prior-phase gates (Phase 1-3 on-device smokes) also still owed. See `.planning/MANUAL-VERIFICATION-LOG.md`.
