@@ -97,6 +97,7 @@ void main() {
               schedule.currentScheduleDateTime?.millisecondsSinceEpoch,
         },
         'isDisabled': false,
+        'isResolved': false,
       });
     });
 
@@ -117,6 +118,44 @@ void main() {
       expect(scheduleFromJson.currentScheduleDateTime?.millisecondsSinceEpoch,
           scheduleDate.millisecondsSinceEpoch);
       expect(scheduleFromJson.isDisabled, true);
+      expect(scheduleFromJson.isResolved, false);
+    });
+
+    test('legacy JSON without isResolved remains schedulable', () async {
+      final OnceAlarmSchedule legacySchedule = OnceAlarmSchedule.fromJson({
+        'alarmRunner': {
+          'id': 51,
+          'currentScheduleDateTime': 0,
+        },
+        'isDisabled': false,
+      });
+
+      expect(legacySchedule.isResolved, false);
+      await legacySchedule.schedule(const Time(hour: 10, minute: 30), 'test');
+
+      expect(legacySchedule.isResolved, false);
+      expect(legacySchedule.currentScheduleDateTime, isNotNull);
+    });
+
+    test('reactivate() clears resolution so the once alarm can arm again',
+        () async {
+      // Resolve it, as a fired + dismissed once alarm would be.
+      await schedule.resolve();
+      expect(schedule.isResolved, true);
+      expect(schedule.isDisabled, true);
+
+      // While resolved it refuses to arm (this is the #3 fix)...
+      await schedule.schedule(const Time(hour: 10, minute: 30), 'test');
+      expect(schedule.currentScheduleDateTime, null);
+
+      // ...until the user explicitly reactivates it (toggle-on / edit).
+      schedule.reactivate();
+      expect(schedule.isResolved, false);
+      expect(schedule.isDisabled, false);
+
+      await schedule.schedule(const Time(hour: 10, minute: 30), 'test');
+      expect(schedule.currentScheduleDateTime, isNotNull);
+      expect(schedule.currentScheduleDateTime!.isAfter(DateTime.now()), true);
     });
   });
 }

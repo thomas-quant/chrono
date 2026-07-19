@@ -1,14 +1,15 @@
 import 'package:clock/clock.dart';
 import 'package:clock_app/alarm/types/alarm.dart';
 import 'package:clock_app/alarm/types/schedules/dates_alarm_schedule.dart';
+import 'package:clock_app/alarm/types/schedules/once_alarm_schedule.dart';
 import 'package:clock_app/common/types/time.dart';
 import 'package:clock_app/settings/types/setting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Regression suite locking in the Plan 02-01 snooze state-machine fixes
 // (SNZ-01..05). These tests drive Alarm.snooze() / Alarm.handleDismiss()
-// DIRECTLY and assert on Alarm flags only (snoozeTime / snoozeCount /
-// isEnabled / isSnoozed / isFinished). They never assert on
+// DIRECTLY and assert on Alarm state (snoozeTime / snoozeCount / isEnabled /
+// isSnoozed / isFinished). They never assert on
 // AndroidAlarmManager — scheduleAlarm / cancelAlarm / scheduleSnoozeAlarm
 // all no-op under FLUTTER_TEST (schedule_alarm.dart:28,101,136), so the
 // model logic runs to completion and mutates flags without touching the OS.
@@ -17,13 +18,10 @@ import 'package:flutter_test/flutter_test.dart';
 // switched snooze() to read clock.now() (D-B); withClock(Clock.fixed(...))
 // pins the time the model reads.
 
-/// Returns a copy of [base] whose OnceAlarmSchedule has already "fired": its
-/// runner holds a *past* schedule time. This is required to exercise the real
-/// production "dismiss disables a one-shot" path. A fresh, never-scheduled
-/// once-alarm has a null runner time, so re-evaluating it on dismiss recomputes
-/// a *future* fire time and leaves it enabled — a OnceAlarmSchedule disables
-/// only once its scheduled instant is in the past (once_alarm_schedule.dart:30).
-/// In production the alarm has always fired (past instant) by dismiss time.
+/// Returns a copy of [base] whose OnceAlarmSchedule has a past runner time.
+/// This helper keeps the existing direct-dismiss regression focused on the
+/// already-fired input state; the null-runner production sequence is covered
+/// by the integration-style test below.
 Alarm _firedOnceAlarm(Alarm base) {
   final json = base.toJson()!;
   // schedules[0] is the OnceAlarmSchedule (createSchedules / fromJson ordering).
@@ -89,6 +87,112 @@ void main() {
         expect(alarm.isEnabled, false);
         expect(alarm.isSnoozed, false);
         expect(alarm.snoozeCount, 0);
+      },
+    );
+
+    test(
+      'once alarm stays disabled through trigger, snooze-fire, and dismiss '
+      'when the fired runner was nulled',
+      () async {
+        // Start with the persisted state that the trigger isolate loads: a
+        // once runner whose scheduled instant is already past. The production
+        // update() below is what marks it resolved, disables the alarm, and
+        // cancels/nulls the runner.
+        final triggerJson = alarm.toJson()!;
+        triggerJson['schedules'][0]['alarmRunner']['currentScheduleDateTime'] =
+            DateTime(2000, 1, 1, 2, 30).millisecondsSinceEpoch;
+        alarm = Alarm.fromJson(triggerJson);
+
+        await alarm.update('test: initial trigger');
+
+        expect(alarm.isEnabled, false);
+        expect(alarm.currentScheduleDateTime, null);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isDisabled, true);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, true);
+
+        // Cross the persistence boundary before snoozing, then persist the
+        // snoozed state as the firing isolate would.
+        alarm = Alarm.fromJson(alarm.toJson());
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, true);
+        final snoozeNow = DateTime.now();
+        await withClock(Clock.fixed(snoozeNow), () async {
+          await alarm.snooze();
+        });
+        expect(alarm.isEnabled, true);
+        expect(alarm.isSnoozed, true);
+        alarm = Alarm.fromJson(alarm.toJson());
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, true);
+
+        // Model the snooze notification firing without waiting five minutes.
+        // update() is the real production snooze-fire update path.
+        final expiredSnoozeJson = alarm.toJson()!;
+        expiredSnoozeJson['snoozeTime'] = DateTime.now()
+            .subtract(const Duration(seconds: 1))
+            .millisecondsSinceEpoch;
+        alarm = Alarm.fromJson(expiredSnoozeJson);
+        await alarm.update('test: snooze trigger');
+
+        expect(alarm.isEnabled, false);
+        expect(alarm.isSnoozed, false);
+        expect(alarm.currentScheduleDateTime, null);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, true);
+
+        // The real dismiss entry point remains terminal and a subsequent
+        // update cannot create a tomorrow runner.
+        await alarm.handleDismiss();
+        await alarm.update('test: post-dismiss update');
+
+        expect(alarm.isEnabled, false);
+        expect(alarm.currentScheduleDateTime, null);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isDisabled, true);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, true);
+      },
+    );
+
+    test(
+      'a resolved once alarm re-enabled by the user (toggle) arms again — the '
+      '#3 fix must not leave it permanently dead',
+      () async {
+        // Drive it to the resolved/disabled state a fired+dismissed once alarm
+        // reaches (past runner -> trigger update resolves + disables + nulls).
+        final triggerJson = alarm.toJson()!;
+        triggerJson['schedules'][0]['alarmRunner']['currentScheduleDateTime'] =
+            DateTime(2000, 1, 1, 2, 30).millisecondsSinceEpoch;
+        alarm = Alarm.fromJson(triggerJson);
+        await alarm.update('test: initial trigger');
+        expect(alarm.isEnabled, false);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, true);
+
+        // Cross the persistence boundary as the UI isolate would, then the user
+        // toggles it back on: it must ARM AGAIN, not stay dead.
+        alarm = Alarm.fromJson(alarm.toJson());
+        await alarm.setIsEnabled(true, 'test: user re-enable');
+
+        expect(alarm.isEnabled, true);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, false);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isDisabled, false);
+        expect(alarm.currentScheduleDateTime, isNotNull);
+        expect(alarm.currentScheduleDateTime!.isAfter(DateTime.now()), true);
+      },
+    );
+
+    test(
+      'a resolved once alarm edited by the user (handleEdit) arms again',
+      () async {
+        final triggerJson = alarm.toJson()!;
+        triggerJson['schedules'][0]['alarmRunner']['currentScheduleDateTime'] =
+            DateTime(2000, 1, 1, 2, 30).millisecondsSinceEpoch;
+        alarm = Alarm.fromJson(triggerJson);
+        await alarm.update('test: initial trigger');
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, true);
+
+        alarm = Alarm.fromJson(alarm.toJson());
+        await alarm.handleEdit('test: user edit');
+
+        expect(alarm.isEnabled, true);
+        expect(alarm.getSchedule<OnceAlarmSchedule>().isResolved, false);
+        expect(alarm.currentScheduleDateTime, isNotNull);
+        expect(alarm.currentScheduleDateTime!.isAfter(DateTime.now()), true);
       },
     );
 

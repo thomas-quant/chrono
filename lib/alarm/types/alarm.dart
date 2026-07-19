@@ -310,8 +310,22 @@ class Alarm extends CustomizableListItem {
   }
 
   Future<void> enable(String description) async {
+    // Explicit user re-enable: a once alarm that already fired/resolved must be
+    // able to arm again (otherwise toggling it on leaves a dead alarm). System
+    // re-evaluation goes through update()/schedule(), never here, so a
+    // snooze-fire cannot revive a resolved once alarm (#3).
+    _reactivateOnceScheduleIfNeeded();
     _unSnooze();
     await schedule(description);
+  }
+
+  /// Clears a once alarm's resolved/disabled state on explicit user
+  /// reactivation (toggle-on / edit) so it can arm again. No-op for other
+  /// schedule types.
+  void _reactivateOnceScheduleIfNeeded() {
+    if (scheduleType == OnceAlarmSchedule) {
+      (activeSchedule as OnceAlarmSchedule).reactivate();
+    }
   }
 
   Future<void> disable() async {
@@ -327,20 +341,24 @@ class Alarm extends CustomizableListItem {
 
   /// Resolves a dismiss the same way the user-list dismiss already does
   /// (`alarm_screen.dart:188`): reset the snooze count, cancel the pending
-  /// snooze, then re-evaluate the active schedule. Because `cancelSnooze()`
-  /// clears `_snoozeTime` first, `isSnoozed` is false when `update()` runs, so
-  /// `update()` disables a resolved one-shot (`activeSchedule.isDisabled`) AND
-  /// finishes a finished-dates schedule (`isFinished`). A disabled alarm is
-  /// skipped on the next trigger (`alarm_isolate.dart` enabled-check), so this
-  /// stops the #457 re-arm by construction (SNZ-03/#457, SNZ-01/SNZ-05).
+  /// snooze, then resolve the active schedule. Because `cancelSnooze()` clears
+  /// `_snoozeTime` first, once schedules can be resolved directly so dismiss
+  /// cannot recompute a future once fire time; other schedule types continue
+  /// through the canonical `update()` path, which handles finished dates.
   Future<void> _resolveDismiss() async {
     // A real dismiss resets the count (preserves the old handleDismiss semantics).
     _snoozeCount = 0;
     // Cancel the pending AndroidAlarmManager snooze by id and clear _snoozeTime.
     await cancelSnooze();
-    // Re-evaluate the active schedule; deactivates a resolved one-shot / finished
-    // dates schedule via the canonical update() path (schedule-agnostic).
-    await update("_resolveDismiss(): re-evaluate schedule after dismiss");
+    if (scheduleType == OnceAlarmSchedule) {
+      _isEnabled = false;
+      await (activeSchedule as OnceAlarmSchedule).resolve();
+    } else {
+      // Re-evaluate non-once schedules through the canonical path; this
+      // deactivates finished dates schedules without changing recurring
+      // schedule behavior.
+      await update("_resolveDismiss(): re-evaluate schedule after dismiss");
+    }
     // Read isFinished AFTER update() — update() may transition a dates schedule
     // to finished. updateAlarmById acts on isMarkedForDeletion after the callback
     // returns, so this flag is honored.
@@ -359,6 +377,10 @@ class Alarm extends CustomizableListItem {
 
   Future<void> handleEdit(String description) async {
     _isEnabled = true;
+    // Editing re-enables the alarm (sets _isEnabled above); a once alarm that
+    // had already resolved must be armable again by the edit, so clear its
+    // resolution before the canonical update() reschedules it.
+    _reactivateOnceScheduleIfNeeded();
     _unSnooze();
     await update(description);
   }
