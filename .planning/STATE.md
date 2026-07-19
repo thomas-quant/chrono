@@ -33,6 +33,41 @@ Deferred / subsumed: 04-03 lock-screen camera spike (now SUBSUMED by 04-08's 04-
 Next: run BOTH 04-07 Task 4 (camera render) and 04-08 Task 4 (secure-keyguard verdict, ≥2 OEMs) on a physical device off a fresh dev APK; record per-device GO/NO-GO/REQUIRES-UNLOCK in 04-LOCKSCREEN-SPIKE.md §3 + MANUAL-VERIFICATION-LOG §B/§C; sign off GAP-A (FIXED) and GAP-B (FIXED or ACCEPTED-AS-NO-GO).
 Resume files: 04-07-PLAN.md (Task 4) + 04-08-PLAN.md (Task 4)
 
+## Project Direction — Owner Pivot (2026-07-18)
+
+**Owner is using Chrono as their own daily alarm; ONLY two outcomes matter. Everything else in the
+GSD checklist is de-prioritized — not abandoned, just not blocking. Do not spend effort elsewhere
+unless the owner asks.**
+
+**GO-FORWARD WORK (the only two things that move this project):**
+
+1. **Max-volume force + hold — NEW small feature, does NOT exist today (highest value).**
+   `alarm.volume` (0–100) only sets the `just_audio` *player* volume; there is **NO** native
+   `AudioManager.setStreamVolume(STREAM_ALARM, …)` anywhere in the app (verified 2026-07-18 — the
+   Kotlin dir has zero AudioManager code). Owner sleeps through because a lowered *system* alarm
+   stream stays lowered, and the player just attenuates within it. Build: a MethodChannel that forces
+   `STREAM_ALARM` to max at ring start + a `ContentObserver` that re-asserts max if the stream is
+   lowered mid-ring, behind an opt-in toggle (per-alarm or global). ~30–40 lines Kotlin + a toggle.
+2. **Re-verify the camera-dismiss render fix (GAP-A) — probably already fixed.**
+   Owner tested a PRE-FIX APK (preview OK at registration, BLACK at dismiss = the `Expanded`-collapse
+   bug). The fix already landed on `master` (self-sizing `SizedBox`, commit `05a2ef2`) and was never
+   re-tested on device. Confirm it works before assuming it's still broken.
+
+**Testing approach — adb automation, not manual.**
+Camera render → `adb exec-out screencap` diff of two frames ~500ms apart on the scan task's "Try out"
+screen (valid proxy: GAP-A repros identically there per the on-device log). Volume-hold →
+`adb shell media volume --stream 4` set-low-then-read-back. scrcpy is optional (a mirror for the human;
+automation reads state via `adb screencap` / `uiautomator`). Owner will set up adb/scrcpy when ready.
+
+**DE-PRIORITIZED (ignore unless owner asks):** GAP-B lock-screen surfacing (already classified accepted
+no-go), 04-06 full e2e matrix, all Phase 1–3 on-device gates, WR-01/02/03/05 review nits, PR-credit doc
+rewords, `pubspec.lock` hardening.
+
+**External review on file:** `.planning/CODEX-REVIEW.md` — Codex `gpt-5.6-sol` reviewed the full milestone
+diff (2026-07-18): 2 Critical / 5 High / 4 Medium, not yet triaged against code. Intersects the pivot:
+scan-task findings #1/#6/#7/#8 (camera-dismiss — #6 black-feed-bypasses-escape mirrors the on-device
+black preview) and reliability-critical #2 (read glitch wipes all alarms) / #3 / #4 / #5.
+
 **Phase 4 execution outcome (2026-06-06):** All four authorable plans landed on `master`.
 04-01 build gate (`flutter_zxing` 2.2.1 exact pin, minSdk 23, CAMERA manifest, blocking zero-ML-Kit CI
 graph gate). 04-02 pure seams (`normalizeCode`/`codesMatch` + `EscapeHatchController`) with headless
@@ -61,6 +96,12 @@ WR-01 (torch graceful-no-flash dead code — needs on-device/zxing-API resolutio
 | 2 | Snooze Reliability | SNZ-01..05 (5) | ✅ Done (source-complete; CI test/analyze + on-device snooze smoke owed) |
 | 3 | Date, Volume & FAB High-Value Fixes | DATE-01..02, VOL-01, FAB-01, PR-01..02 (6) | ✅ Done (source-complete; CI test/analyze + on-device checks owed) |
 | 4 | QR/Barcode Scan-to-Dismiss Task | BUILD-01..02, SCAN-01..12 (14) | 🟡 Authorable-complete (4/6 plans + review blockers fixed); 04-03 spike + 04-06 e2e deferred (on-device); CI gates owed |
+
+## Quick Tasks Completed
+
+| Quick ID | Task | Date | Result |
+|----------|------|------|--------|
+| 260719-1rs | Triage the on-file Codex review + persist verdicts to CODEX-REVIEW.md | 2026-07-19 | **11/11 CONFIRMED** (5 parallel read-only agents vs HEAD `1b91b5f`; 0 false positives, 0 already-fixed). Doc-only; findings triaged, **not fixed**. See `.planning/CODEX-REVIEW.md` §Triage. |
 
 ## Performance Metrics
 
