@@ -52,6 +52,9 @@ jobs:
           flutter analyze \
             lib/alarm/logic/code_match.dart \
             lib/alarm/logic/escape_hatch_controller.dart \
+            lib/alarm/logic/camera_liveness_watchdog.dart \
+            lib/alarm/logic/scan_camera_lifecycle_controller.dart \
+            lib/alarm/logic/scan_task_controller.dart \
             lib/alarm/types/alarm_task.dart \
             lib/alarm/data/alarm_task_schemas.dart \
             lib/alarm/widgets/tasks/scan_task.dart \
@@ -64,8 +67,11 @@ jobs:
             lib/settings/widgets/list_setting_screen.dart \
             test/alarm/logic/code_match_test.dart \
             test/alarm/logic/escape_hatch_controller_test.dart \
+            test/alarm/logic/camera_liveness_watchdog_test.dart \
+            test/alarm/logic/scan_camera_lifecycle_controller_test.dart \
             test/alarm/types/alarm_task_scan_test.dart \
-            test/alarm/widgets/tasks/scan_task_layout_test.dart
+            test/alarm/widgets/tasks/scan_task_layout_test.dart \
+            test/alarm/widgets/tasks/scan_lifecycle_test.dart
 
       # Informational: runs the storage tests (and the rest of the suite).
       - name: Test (informational)

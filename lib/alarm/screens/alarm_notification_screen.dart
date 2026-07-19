@@ -56,7 +56,14 @@ class _AlarmNotificationScreenState extends State<AlarmNotificationScreen> {
         IsolateNameServer.lookupPortByName(setAlarmVolumePortName)
             ?.send([alarm.volume * alarm.volumeDuringTasks / 100]);
         // RingtonePlayer.setVolume(0);
-        _currentWidget = alarm.tasks[_currentIndex].builder(_setNextWidget);
+        final task = alarm.tasks[_currentIndex];
+        _currentWidget = KeyedSubtree(
+          // AlarmTask.id is stable for the lifetime of a configured task. A
+          // distinct key forces Flutter to dispose the previous ScanTask
+          // state before mounting the next consecutive scan task.
+          key: ValueKey<int>(task.id),
+          child: task.builder(_setNextWidget),
+        );
       }
       _currentIndex++;
     });
@@ -149,11 +156,8 @@ class _AlarmNotificationScreenState extends State<AlarmNotificationScreen> {
                   ),
                 Expanded(
                   flex: 2,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _currentWidget,
-                    ],
+                  child: Center(
+                    child: _currentWidget,
                   ),
                 ),
                 // if (!alarm.maxSnoozeIsReached)

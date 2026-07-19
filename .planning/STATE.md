@@ -103,6 +103,14 @@ WR-01 (torch graceful-no-flash dead code — needs on-device/zxing-API resolutio
 |----------|------|------|--------|
 | 260719-1rs | Triage the on-file Codex review + persist verdicts to CODEX-REVIEW.md | 2026-07-19 | **11/11 CONFIRMED** (5 parallel read-only agents vs HEAD `1b91b5f`; 0 false positives, 0 already-fixed). Doc-only; findings triaged, **not fixed**. See `.planning/CODEX-REVIEW.md` §Triage. |
 
+## Codex-Orchestrated Review-Fixes (2026-07-19)
+
+Implementer: Codex `gpt-5.6-luna` @ xhigh · reviewer/fixer: Claude. One atomic commit per shared-file bundle. "Verified" = CI-green + Claude review (no local Flutter toolchain); on-device tails flagged per bundle.
+
+| Bundle | Findings | Status |
+|--------|----------|--------|
+| Camera scan-dismiss | #1, #6, #7, #8 | **Landed.** #1 host keys tasks by `AlarmTask.id` + defensive `didUpdateWidget` reset (+ `ScanTaskController` latch seam). #7 bounded `LayoutBuilder` w/ pinned dismiss + `SafeArea`; GAP-A unbounded fallback path preserved. #8 `WidgetsBindingObserver` releases/restarts the camera on both scanners (+ `ScanCameraLifecycleController` seam). **#6 reworked by reviewer**: Codex's liveness watchdog tore a healthy-but-slow scanner down to "unlock to scan" at 15s AND a single wrong scan permanently disarmed the floor (a decode ≠ camera liveness; `ReaderWidget` exposes no frame signal). Replaced with a **non-disableable 120s time floor** (matches the escape-hatch default) that reveals the dismiss WITHOUT tearing the scanner down; detectable failures (controller exception / denied camera permission) still degrade to unlock-to-scan. **On-device tails owed:** real black-feed behavior (#6), true camera release on background (#8), landscape/large-text/TalkBack hit-testing (#7). |
+
 ## Performance Metrics
 
 - **Phases complete:** 3/4 (Phase 4 authorable-complete; on-device gates deferred)

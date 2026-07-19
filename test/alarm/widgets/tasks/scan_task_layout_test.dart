@@ -1,9 +1,11 @@
+import 'package:clock_app/alarm/logic/scan_task_controller.dart';
 import 'package:clock_app/alarm/types/alarm_task.dart';
 import 'package:clock_app/alarm/widgets/tasks/scan_task.dart';
 import 'package:clock_app/settings/types/setting_group.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_zxing/flutter_zxing.dart';
 
 // GAP-A regression guard (04-07): the host↔widget HEIGHT contract for ScanTask.
 //
@@ -14,7 +16,8 @@ import 'package:flutter_test/flutter_test.dart';
 // ScanTask UNBOUNDED height. An `Expanded` under unbounded height collapses the
 // `ReaderWidget`'s `Positioned.fill` Stack to zero height → no camera preview
 // (silent in a release APK — no red overflow overlay). The fix made ScanTask
-// self-sizing via a MediaQuery-derived `SizedBox`. This test reproduces the
+// self-sizing via a bounded LayoutBuilder path plus a MediaQuery-derived
+// fallback `SizedBox`. This test reproduces the
 // EXACT host condition — ScanTask as a non-flex child of an unbounded `Column`
 // — and asserts the post-fix invariant: no overflow / layout exception, and a
 // finite, non-zero rendered height.
@@ -82,13 +85,237 @@ void main() {
         expect(tester.takeException(), isNull);
 
         // (b) The ScanTask subtree resolves to a finite, non-zero, bounded size.
-        // Post-fix this is driven by the MediaQuery-derived SizedBox; pre-fix it
-        // would collapse to zero height.
+        // Post-fix this is driven by the unbounded-host fallback SizedBox;
+        // pre-fix it would collapse to zero height.
         final Size size = tester.getSize(find.byType(ScanTask));
         expect(size.height, isFinite);
         expect(size.height, greaterThan(0.0));
         expect(size.width, isFinite);
         expect(size.width, greaterThan(0.0));
+      },
+    );
+
+    testWidgets(
+      'resets consecutive task state: the second task can solve independently',
+      (WidgetTester tester) async {
+        final firstSettings = AlarmTask(AlarmTaskType.scan).settings;
+        firstSettings
+            .getSetting("Registered Code")
+            .setValueWithoutNotify("first-code");
+        final secondSettings = AlarmTask(AlarmTaskType.scan).settings;
+        secondSettings
+            .getSetting("Registered Code")
+            .setValueWithoutNotify("second-code");
+
+        final firstController = ScanTaskController();
+        final secondController = ScanTaskController();
+        var firstSolved = 0;
+        var secondSolved = 0;
+        var currentTask = ScanTask(
+          controller: firstController,
+          emergencyDismissTimeout: const Duration(hours: 1),
+          onSolve: () => firstSolved++,
+          settings: firstSettings,
+        );
+        late void Function(Widget) replaceTask;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('en'),
+            home: Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) {
+                  replaceTask = (task) => setState(() => currentTask = task);
+                  return SizedBox(
+                    width: 640,
+                    height: 320,
+                    child: currentTask,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Drive the same controller seam used by the ReaderWidget callback.
+        firstController.handleScan("first-code");
+        expect(firstSolved, 1);
+
+        // Deliberately leave the two ScanTask widgets unkeyed here: didUpdateWidget
+        // must still reset all task-specific state for hosts that reuse a state.
+        currentTask = ScanTask(
+          controller: secondController,
+          emergencyDismissTimeout: const Duration(hours: 1),
+          onSolve: () => secondSolved++,
+          settings: secondSettings,
+        );
+        replaceTask(currentTask);
+        await tester.pump();
+        secondController.handleScan("second-code");
+
+        expect(firstSolved, 1);
+        expect(secondSolved, 1);
+      },
+    );
+
+    testWidgets(
+      'the second consecutive task still exposes emergency dismiss',
+      (WidgetTester tester) async {
+        final firstSettings = AlarmTask(AlarmTaskType.scan).settings;
+        firstSettings
+            .getSetting("Registered Code")
+            .setValueWithoutNotify("first-code");
+        firstSettings
+            .getSetting("Escape Hatch")
+            .setValueWithoutNotify(false);
+        final secondSettings = AlarmTask(AlarmTaskType.scan).settings;
+        secondSettings
+            .getSetting("Registered Code")
+            .setValueWithoutNotify("second-code");
+        secondSettings
+            .getSetting("Escape Hatch")
+            .setValueWithoutNotify(false);
+
+        final firstController = ScanTaskController();
+        var firstSolved = 0;
+        var secondSolved = 0;
+        var currentTask = ScanTask(
+          controller: firstController,
+          emergencyDismissTimeout: const Duration(hours: 1),
+          onSolve: () => firstSolved++,
+          settings: firstSettings,
+        );
+        late void Function(Widget) replaceTask;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('en'),
+            home: Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) {
+                  replaceTask = (task) => setState(() => currentTask = task);
+                  return SizedBox(
+                    width: 640,
+                    height: 320,
+                    child: currentTask,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        firstController.handleScan("first-code");
+        expect(firstSolved, 1);
+
+        final secondController = ScanTaskController();
+        currentTask = ScanTask(
+          controller: secondController,
+          emergencyDismissTimeout: Duration.zero,
+          onSolve: () => secondSolved++,
+          settings: secondSettings,
+        );
+        replaceTask(currentTask);
+        await tester.pump();
+        await tester.pump();
+
+        final dismissButton = find.byType(ElevatedButton);
+        expect(dismissButton, findsOneWidget);
+        final buttonRect = tester.getRect(dismissButton);
+        expect(buttonRect.top, greaterThanOrEqualTo(0.0));
+        expect(buttonRect.bottom, lessThanOrEqualTo(320.0));
+        await tester.tap(dismissButton);
+        await tester.pump();
+
+        expect(secondSolved, 1);
+      },
+    );
+
+    testWidgets(
+      'keeps the emergency button visible and hit-testable in landscape at large text',
+      (WidgetTester tester) async {
+        final settings = AlarmTask(AlarmTaskType.scan).settings;
+        settings.getSetting("Escape Hatch").setValueWithoutNotify(false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('en'),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(640, 320),
+                textScaleFactor: 2.5,
+              ),
+              child: Scaffold(
+                body: SizedBox(
+                  width: 640,
+                  height: 320,
+                  child: ScanTask(
+                    emergencyDismissTimeout: Duration.zero,
+                    onSolve: () {},
+                    settings: settings,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        final dismissButton = find.byType(ElevatedButton);
+        expect(dismissButton, findsOneWidget);
+        final buttonRect = tester.getRect(dismissButton);
+        expect(buttonRect.top, greaterThanOrEqualTo(0.0));
+        expect(buttonRect.bottom, lessThanOrEqualTo(320.0));
+        await tester.tap(dismissButton);
+      },
+    );
+
+    testWidgets(
+      'emergency floor reveals dismiss but does NOT tear the scanner down',
+      (WidgetTester tester) async {
+        // Escape Hatch off + the emergency floor elapses immediately, with NO
+        // detectable camera failure (no onControllerCreated exception).
+        final settings = AlarmTask(AlarmTaskType.scan).settings;
+        settings.getSetting("Escape Hatch").setValueWithoutNotify(false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('en'),
+            home: Scaffold(
+              body: SizedBox(
+                width: 640,
+                height: 320,
+                child: ScanTask(
+                  emergencyDismissTimeout: Duration.zero,
+                  onSolve: () {},
+                  settings: settings,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Never-trap: the floor revealed the Dismiss affordance even with the
+        // Escape Hatch off...
+        expect(find.byType(ElevatedButton), findsOneWidget);
+        // ...but the live scanner is NOT torn down. A slow scan is not a
+        // failure, and "unlock to scan" (which un-mounts the ReaderWidget) is
+        // reserved for a DETECTABLE camera failure — so the ReaderWidget must
+        // stay mounted here.
+        expect(find.byType(ReaderWidget), findsOneWidget);
       },
     );
   });

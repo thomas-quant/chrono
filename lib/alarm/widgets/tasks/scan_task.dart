@@ -1,9 +1,14 @@
-import 'package:clock_app/alarm/logic/code_match.dart';
+import 'dart:async';
+
+import 'package:clock_app/alarm/logic/camera_liveness_watchdog.dart';
 import 'package:clock_app/alarm/logic/escape_hatch_controller.dart';
+import 'package:clock_app/alarm/logic/scan_camera_lifecycle_controller.dart';
+import 'package:clock_app/alarm/logic/scan_task_controller.dart';
 import 'package:clock_app/settings/types/setting_group.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_zxing/flutter_zxing.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:vibration/vibration.dart';
 
 /// Ring-time scan-to-dismiss task widget (SCAN-03/04/05/06/07/09/11 — ring
@@ -37,21 +42,41 @@ class ScanTask extends StatefulWidget {
     super.key,
     required this.onSolve,
     required this.settings,
+    this.controller,
+    this.emergencyDismissTimeout = const Duration(seconds: 120),
   });
 
   final VoidCallback onSolve;
   final SettingGroup settings;
+  final ScanTaskController? controller;
+
+  /// Elapsed time after which the NON-DISABLEABLE emergency dismiss floor is
+  /// revealed (never-trap guarantee), even when the Escape Hatch is off and the
+  /// camera has surfaced no error. Matches the Escape Hatch's own elapsed
+  /// default (120s) so it introduces no NEW bypass window in the common
+  /// (hatch-enabled) case — it only becomes the sole backstop when the hatch is
+  /// off. A slow scan is not a failure, so the floor never tears the scanner
+  /// down; that is reserved for a DETECTABLE camera failure ([_handleCameraFailure]).
+  final Duration emergencyDismissTimeout;
 
   @override
   State<ScanTask> createState() => _ScanTaskState();
 }
 
-class _ScanTaskState extends State<ScanTask> {
+class _ScanTaskState extends State<ScanTask> with WidgetsBindingObserver {
   /// The registered code, normalized once at init (normalize-both-sides
   /// invariant — the register side normalizes before storing, Plan 05).
   String _storedNormalized = "";
 
   EscapeHatchController? _escapeHatch;
+  CameraLivenessWatchdog? _cameraLivenessWatchdog;
+  late ScanCameraLifecycleController _lifecycleController;
+  ScanTaskController? _taskController;
+  int _scannerGeneration = 0;
+
+  /// The ReaderWidget is removed while the app is backgrounded so its camera
+  /// controller is released before another activity can use the camera.
+  bool _scannerPaused = false;
 
   /// Revealed once the escape hatch fires (time / attempts / camera-failure
   /// fireNow). Gates the Semantics-wrapped Dismiss affordance.
@@ -72,14 +97,6 @@ class _ScanTaskState extends State<ScanTask> {
   /// SCAN-09).
   bool _torchUnavailable = false;
 
-  /// One-shot latch (CR-02): onSolve() must fire AT MOST ONCE. ReaderWidget can
-  /// deliver a second matching frame before teardown (scanDelaySuccess is a
-  /// 1000ms throttle, not a latch), and the escape Dismiss button can be
-  /// double-tapped — either could double-advance the task step or
-  /// double-dismiss the alarm. Mirrors ScanRegisterScreen's `_registered`
-  /// guard. Set true BEFORE every onSolve() call site.
-  bool _solved = false;
-
   /// Symbology set (SCAN-04): broad ZXing format set — QR + DataMatrix + the
   /// common 1D codes. Narrow to Format.qrCode only if 1D false-reads surface
   /// on device (SCAN-04 escape clause). Bitmask of Format bit-shift constants.
@@ -94,10 +111,38 @@ class _ScanTaskState extends State<ScanTask> {
       Format.itf;
 
   void _initialize() {
+    _scannerGeneration++;
     _storedNormalized =
         normalizeCode(widget.settings.getSetting("Registered Code").value);
     final bool escapeEnabled =
         widget.settings.getSetting("Escape Hatch").value;
+
+    _cameraLivenessWatchdog?.dispose();
+    _cameraLivenessWatchdog = CameraLivenessWatchdog(
+      timeout: widget.emergencyDismissTimeout,
+      onTimeout: _revealEmergencyDismissFloor,
+    );
+
+    _taskController ??= widget.controller ?? ScanTaskController();
+    if (widget.controller != null &&
+        !identical(widget.controller, _taskController)) {
+      _taskController = widget.controller;
+    }
+    _taskController!.configure(
+      storedNormalized: _storedNormalized,
+      onSolve: () {
+        if (!mounted) return;
+        widget.onSolve();
+      },
+    );
+
+    // Reset every state value that belongs to the previous task. The ring host
+    // also keys task widgets by AlarmTask.id, but this protects any host that
+    // updates ScanTask in place as well.
+    _escapeAvailable = false;
+    _cameraFailed = false;
+    _showWrongCode = false;
+    _torchUnavailable = false;
 
     // Re-arm a fresh controller each time settings change (didUpdateWidget) so a
     // stale timer can never outlive the active task (SCAN-11).
@@ -109,11 +154,22 @@ class _ScanTaskState extends State<ScanTask> {
         setState(() => _escapeAvailable = true);
       },
     )..start();
+
+    if (!_scannerPaused) {
+      _cameraLivenessWatchdog!.start();
+      unawaited(_checkCameraAccess(_scannerGeneration));
+    }
   }
 
   @override
   void initState() {
     super.initState();
+    _taskController = widget.controller ?? ScanTaskController();
+    _lifecycleController = ScanCameraLifecycleController(
+      onBackgrounded: _pauseScanner,
+      onResumed: _resumeScanner,
+    );
+    WidgetsBinding.instance.addObserver(this);
     _initialize();
   }
 
@@ -124,7 +180,25 @@ class _ScanTaskState extends State<ScanTask> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _lifecycleController.handle(ScanCameraLifecycleEvent.backgrounded);
+      case AppLifecycleState.resumed:
+        _lifecycleController.handle(ScanCameraLifecycleEvent.resumed);
+      case AppLifecycleState.hidden:
+        // inactive/paused already performed the required teardown.
+        break;
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _lifecycleController.dispose();
+    _cameraLivenessWatchdog?.dispose();
     // Cancel the owned escape timer so no callback fires after the task leaves
     // the tree. The ReaderWidget releases its CameraController when it is removed
     // from the tree (every exit path un-mounts this widget — SCAN-11).
@@ -133,18 +207,14 @@ class _ScanTaskState extends State<ScanTask> {
   }
 
   void _onScan(Code code) {
-    // One-shot latch (CR-02): a second matching decode must not double-fire
-    // onSolve() (double-advance / double-dismiss).
-    if (_solved) return;
     // Privacy: the decoded payload is opaque — never emitted to logger/print/UI
     // (D-REG-DISPLAY / threat T-04-10). It is only normalized and compared.
-    if (codesMatch(normalizeCode(code.text), _storedNormalized)) {
-      // The match is the ONLY non-escape success path → advance/dismiss.
-      // Latch BEFORE calling onSolve so a re-entrant decode can't get through.
-      _solved = true;
-      widget.onSolve();
-      return;
-    }
+    //
+    // NB: we deliberately do NOT signal the emergency-dismiss floor here. A
+    // decode is not proof the camera is healthy, and a single wrong scan must
+    // never disarm the non-disableable floor — the floor is purely time-based.
+    if (_taskController!.handleScan(code.text)) return;
+
     // Non-matching valid decode: haptic + transient error flash + count toward
     // the escape threshold. ReaderWidget.scanDelay (1000ms) rate-limits distinct
     // reads to ~1/sec so the count is meaningful (Pitfall 2 — never count raw
@@ -167,9 +237,67 @@ class _ScanTaskState extends State<ScanTask> {
     // AND degrade to the Surface-4 unlock-to-scan prompt instead of a dead
     // scanner (D-LOCK-NOGO-UX). This is a runtime device-state branch, NOT a
     // manufacturer lookup.
+    _handleCameraFailure();
+  }
+
+  Future<void> _checkCameraAccess(int generation) async {
+    try {
+      // Ring time must never request permission. A denied permission is an
+      // immediate camera failure; the liveness watchdog covers a granted but
+      // unusable, black, or frozen feed.
+      final PermissionStatus status = await Permission.camera.status;
+      if (!mounted ||
+          generation != _scannerGeneration ||
+          _scannerPaused ||
+          _cameraFailed) {
+        return;
+      }
+      if (!status.isGranted) _handleCameraFailure();
+    } catch (_) {
+      // A headless/platform-channel failure is not treated as denial. The
+      // bounded watchdog remains the fallback for camera availability.
+    }
+  }
+
+  /// Non-disableable emergency dismiss floor (never-trap guarantee). Fired by the
+  /// time-based [CameraLivenessWatchdog] after [ScanTask.emergencyDismissTimeout].
+  /// Reveals the Dismiss affordance regardless of the Escape Hatch toggle
+  /// (`fireNow` ignores `enabled`), but does NOT tear the scanner down: a healthy
+  /// but not-yet-scanned camera (a slow scan is not a failure) must keep working,
+  /// and the "unlock to scan" prompt would be wrong messaging when nothing is
+  /// actually wrong. A silent black/frozen feed is indistinguishable from a slow
+  /// scan here (ReaderWidget exposes no frame signal), so this time floor is the
+  /// honest backstop for that case too.
+  void _revealEmergencyDismissFloor() {
+    if (_scannerPaused) return;
     _escapeHatch?.fireNow();
-    if (!mounted) return;
+  }
+
+  /// A DETECTABLE camera failure — an `onControllerCreated` exception or a
+  /// not-granted camera permission at ring time. Surfaces the escape immediately
+  /// (`fireNow` ignores the Escape Hatch toggle) AND degrades to the Surface-4
+  /// unlock-to-scan prompt, un-mounting the dead ReaderWidget (SCAN-11).
+  void _handleCameraFailure() {
+    if (_scannerPaused) return;
+    _cameraLivenessWatchdog?.cancel();
+    _escapeHatch?.fireNow();
+    if (!mounted || _cameraFailed) return;
     setState(() => _cameraFailed = true);
+  }
+
+  void _pauseScanner() {
+    _cameraLivenessWatchdog?.cancel();
+    if (!mounted) return;
+    setState(() => _scannerPaused = true);
+  }
+
+  void _resumeScanner() {
+    if (!mounted) return;
+    setState(() => _scannerPaused = false);
+    if (!_cameraFailed) {
+      _cameraLivenessWatchdog?.start();
+      unawaited(_checkCameraAccess(_scannerGeneration));
+    }
   }
 
   @override
@@ -179,44 +307,87 @@ class _ScanTaskState extends State<ScanTask> {
     final TextTheme textTheme = theme.textTheme;
     final AppLocalizations localizations = AppLocalizations.of(context)!;
 
-    // GAP-A fix (D-RING-LAYOUT): give the scanner / unlock branch a DEFINITE
-    // height derived from the screen so ScanTask is self-sizing and no longer
-    // depends on a bounded-Flex host. Both hosts (try_alarm_task_screen.dart,
-    // alarm_notification_screen.dart) place this widget as a NON-flex child of a
-    // Column → unbounded height. The previous top-level `Expanded` collapsed the
-    // `ReaderWidget`'s `Positioned.fill` Stack to zero height under that unbounded
-    // constraint (silent in a release APK), so no camera pixels rendered. A
-    // MediaQuery-derived SizedBox resolves the Stack against a real height and is
-    // applied to BOTH branches so the unlock-to-scan degradation is not
-    // zero-height either. ScanTask-ONLY change — the shared hosts are untouched
-    // (editing them would break the math/retype task widgets in the same slot).
-    final double scannerHeight = MediaQuery.of(context).size.height * 0.6;
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final Widget instruction = Text(
             localizations.scanRingInstruction,
             style: textTheme.headlineMedium,
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16.0),
-          SizedBox(
-            height: scannerHeight,
-            child: _cameraFailed
-                ? _buildUnlockToScanPrompt(
-                    context, colorScheme, textTheme, localizations)
-                : _buildScanner(context, colorScheme, textTheme, localizations),
-          ),
-          // The escape Dismiss affordance renders in BOTH branches so the escape
-          // hatch is always underneath (anti-trap, threat T-04-11).
-          if (_escapeAvailable)
-            _buildDismissButton(context, localizations),
-        ],
+          );
+
+          if (constraints.hasBoundedHeight) {
+            // Reserve the emergency control below the flexible scanner. The
+            // control therefore remains in the viewport and hit-testable at
+            // landscape sizes and large text scales.
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: SingleChildScrollView(
+                      shrinkWrap: true,
+                      child: instruction,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  Expanded(
+                    child: _buildScannerSurface(
+                      context, colorScheme, textTheme, localizations,
+                    ),
+                  ),
+                  if (_escapeAvailable)
+                    _buildDismissButton(context, localizations),
+                ],
+              ),
+            );
+          }
+
+          // GAP-A compatibility: both existing task hosts can provide an
+          // unbounded Column. Keep a definite, sane scanner height there so
+          // ReaderWidget's Positioned.fill receives real height. The bounded
+          // ring-host path above handles viewport reservation.
+          final double scannerHeight =
+              (MediaQuery.of(context).size.height * 0.6)
+                  .clamp(120.0, 480.0)
+                  .toDouble();
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                instruction,
+                const SizedBox(height: 16.0),
+                SizedBox(
+                  height: scannerHeight,
+                  child: _buildScannerSurface(
+                    context, colorScheme, textTheme, localizations,
+                  ),
+                ),
+                if (_escapeAvailable)
+                  _buildDismissButton(context, localizations),
+              ],
+            ),
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildScannerSurface(
+    BuildContext context,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+    AppLocalizations localizations,
+  ) {
+    if (_cameraFailed) {
+      return _buildUnlockToScanPrompt(
+          context, colorScheme, textTheme, localizations);
+    }
+    if (_scannerPaused) return const SizedBox.expand();
+    return _buildScanner(context, colorScheme, textTheme, localizations);
   }
 
   Widget _buildScanner(
@@ -293,23 +464,25 @@ class _ScanTaskState extends State<ScanTask> {
     AppLocalizations localizations,
   ) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              localizations.scanUnlockToScanTitle,
-              style: textTheme.displaySmall ?? textTheme.headlineMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24.0),
-            Text(
-              localizations.scanUnlockToScanBody,
-              style: textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                localizations.scanUnlockToScanTitle,
+                style: textTheme.displaySmall ?? textTheme.headlineMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24.0),
+              Text(
+                localizations.scanUnlockToScanBody,
+                style: textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -332,9 +505,7 @@ class _ScanTaskState extends State<ScanTask> {
             // Same one-shot latch as _onScan (CR-02): a double-tap must not
             // double-fire onSolve().
             onPressed: () {
-              if (_solved) return;
-              _solved = true;
-              widget.onSolve();
+              _taskController!.dismiss();
             },
             child: Text(localizations.dismissAlarmButton),
           ),

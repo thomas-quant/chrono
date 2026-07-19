@@ -1,4 +1,5 @@
 import 'package:clock_app/alarm/logic/code_match.dart';
+import 'package:clock_app/alarm/logic/scan_camera_lifecycle_controller.dart';
 import 'package:clock_app/navigation/widgets/app_top_bar.dart';
 import 'package:clock_app/settings/types/setting.dart';
 import 'package:flutter/material.dart';
@@ -30,11 +31,14 @@ class ScanRegisterScreen extends StatefulWidget {
   State<ScanRegisterScreen> createState() => _ScanRegisterScreenState();
 }
 
-class _ScanRegisterScreenState extends State<ScanRegisterScreen> {
+class _ScanRegisterScreenState extends State<ScanRegisterScreen>
+    with WidgetsBindingObserver {
   /// Guards against a second decode arriving after we have already stored +
   /// scheduled the pop (ReaderWidget can deliver another frame before the route
   /// is gone).
   bool _registered = false;
+  late final ScanCameraLifecycleController _lifecycleController;
+  bool _scannerPaused = false;
 
   /// Symbology set (SCAN-04): the SAME broad ZXing format set the ring widget
   /// uses (scan_task.dart) — QR + DataMatrix + the common 1D codes — so a code
@@ -50,6 +54,47 @@ class _ScanRegisterScreenState extends State<ScanRegisterScreen> {
       Format.code39 |
       Format.itf;
 
+  @override
+  void initState() {
+    super.initState();
+    _lifecycleController = ScanCameraLifecycleController(
+      onBackgrounded: _pauseScanner,
+      onResumed: _resumeScanner,
+    );
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _lifecycleController.handle(ScanCameraLifecycleEvent.backgrounded);
+      case AppLifecycleState.resumed:
+        _lifecycleController.handle(ScanCameraLifecycleEvent.resumed);
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  void _pauseScanner() {
+    if (!mounted) return;
+    setState(() => _scannerPaused = true);
+  }
+
+  void _resumeScanner() {
+    if (!mounted) return;
+    setState(() => _scannerPaused = false);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _lifecycleController.dispose();
+    super.dispose();
+  }
+
   void _onScan(Code code) {
     if (_registered) return;
     // Privacy: the payload is opaque — normalize BEFORE storing (D-MATCH-NORMALIZE)
@@ -63,14 +108,18 @@ class _ScanRegisterScreenState extends State<ScanRegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const AppTopBar(),
-      body: ReaderWidget(
-        codeFormat: _scanFormats,
-        showFlashlight: true, // torch available while registering
-        showToggleCamera: false,
-        showGallery: false,
-        scanDelay: const Duration(milliseconds: 1000),
-        scanDelaySuccess: const Duration(milliseconds: 1000),
-        onScan: (Code code) async => _onScan(code),
+      body: SafeArea(
+        child: _scannerPaused
+            ? const SizedBox.expand()
+            : ReaderWidget(
+                codeFormat: _scanFormats,
+                showFlashlight: true, // torch available while registering
+                showToggleCamera: false,
+                showGallery: false,
+                scanDelay: const Duration(milliseconds: 1000),
+                scanDelaySuccess: const Duration(milliseconds: 1000),
+                onScan: (Code code) async => _onScan(code),
+              ),
       ),
     );
   }
