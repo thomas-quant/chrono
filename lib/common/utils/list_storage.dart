@@ -14,6 +14,31 @@ import 'package:watcher/watcher.dart';
 final queue = Queue();
 final watcherSubscriptions = <String, StreamSubscription>{};
 
+/// Result of a typed list read that preserves the distinction between a
+/// successfully loaded empty/absent list and an I/O or decoding failure.
+sealed class ListLoadResult<T extends JsonSerializable> {
+  const ListLoadResult();
+}
+
+/// A list was read successfully. An absent file and a stored `[]` both have
+/// an empty [items] list, and are valid input for callers that need to save it.
+final class ListLoadSuccess<T extends JsonSerializable>
+    extends ListLoadResult<T> {
+  final List<T> items;
+
+  const ListLoadSuccess(this.items);
+}
+
+/// The list could not be read or decoded. Callers performing destructive
+/// recovery must abort rather than treating this as an empty list.
+final class ListLoadFailure<T extends JsonSerializable>
+    extends ListLoadResult<T> {
+  final Object error;
+  final StackTrace stackTrace;
+
+  const ListLoadFailure(this.error, this.stackTrace);
+}
+
 void watchTextFile(String key, void Function(WatchEvent) callback) {
   String appDataDirectory = getAppDataDirectoryPathSync();
   // File file = File(path.join(appDataDirectory, '$key.txt'));
@@ -65,6 +90,21 @@ Future<List<T>> loadList<T extends JsonSerializable>(String key) async {
   } catch (e) {
     logger.e("Error loading list ($key): $e");
     return [];
+  }
+}
+
+/// Loads a typed list without conflating a read failure with an empty list.
+///
+/// This is intentionally additive: existing [loadList] callers retain their
+/// historical fallback-to-empty behavior. Use this result when an empty
+/// fallback would cause a destructive update to erase valid stored data.
+Future<ListLoadResult<T>> loadListResult<T extends JsonSerializable>(
+    String key) async {
+  try {
+    return ListLoadSuccess<T>(listFromString<T>(await loadTextFile(key)));
+  } catch (error, stackTrace) {
+    logger.e("Error loading list ($key): $error");
+    return ListLoadFailure<T>(error, stackTrace);
   }
 }
 

@@ -95,16 +95,18 @@ class _AppState extends State<App> {
     // recovery actually dropped or reset one or more alarms. Routine recovery
     // (settings defaulted, salvaged non-alarm data, slow init) leaves this flag
     // false and stays silent (Pitfall 5). No state-management library — this is
-    // a post-frame callback reading the module-level SalvageReport flag.
+    // a post-frame callback reading the module-level SalvageReport flag and its
+    // durable marker (which may have been written by another isolate).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showAlarmsResetNoticeIfNeeded();
     });
   }
 
   /// Shows a single, dismissible, screen-reader-reachable, localized SnackBar
-  /// when [SalvageReport.alarmsWereLost] is set, then clears the flag so it is
-  /// shown exactly once. Gated to the normal (post-onboarding) route — never on
-  /// the onboarding screen — and a no-op until the messenger is mounted.
+  /// when [SalvageReport.alarmsWereLost] is set in memory or by its durable
+  /// marker, then clears both so it is shown exactly once. Gated to the normal
+  /// (post-onboarding) route — never on the onboarding screen — and a no-op
+  /// until the messenger is mounted.
   void _showAlarmsResetNoticeIfNeeded() {
     if (!SalvageReport.alarmsWereLost) return;
 

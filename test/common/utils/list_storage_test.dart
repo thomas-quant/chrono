@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:clock_app/common/data/paths.dart';
+import 'package:clock_app/common/types/schedule_id.dart';
 import 'package:clock_app/common/utils/list_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
@@ -69,6 +70,41 @@ void main() {
       final target = File(path.join(tempDir.path, 'located.txt'));
       expect(target.existsSync(), isTrue,
           reason: 'target must live in the same dir so rename is atomic');
+    });
+  });
+
+  group('loadListResult', () {
+    test('represents an absent file as a successful empty list', () async {
+      final result = await loadListResult<ScheduleId>('absent');
+
+      expect(result, isA<ListLoadSuccess<ScheduleId>>());
+      expect((result as ListLoadSuccess<ScheduleId>).items, isEmpty);
+    });
+
+    test('represents a stored [] as a successfully decoded empty list',
+        () async {
+      await saveTextFile('stored_empty', '[]');
+
+      final result = await loadListResult<ScheduleId>('stored_empty');
+
+      expect(result, isA<ListLoadSuccess<ScheduleId>>());
+      expect((result as ListLoadSuccess<ScheduleId>).items, isEmpty);
+    });
+
+    test('surfaces a read failure instead of returning an empty list',
+        () async {
+      // Force a DETERMINISTIC read failure: the file exists (so loadTextFile
+      // calls readAsString) but holds invalid UTF-8, which the default utf8
+      // decoder rejects on every platform. A directory would NOT work here —
+      // File.existsSync() is false for a directory, so loadTextFile would take
+      // the empty-list fallback — and permission tricks are unreliable in CI
+      // (often runs as root).
+      await File(path.join(tempDir.path, 'read_failure.txt'))
+          .writeAsBytes(<int>[0xC3, 0x28]);
+
+      final result = await loadListResult<ScheduleId>('read_failure');
+
+      expect(result, isA<ListLoadFailure<ScheduleId>>());
     });
   });
 }

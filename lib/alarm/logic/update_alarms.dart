@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:clock_app/alarm/logic/alarm_isolate.dart';
 import 'package:clock_app/alarm/logic/schedule_alarm.dart';
 import 'package:clock_app/alarm/types/alarm.dart';
+import 'package:clock_app/common/logic/safe_list_update.dart';
 import 'package:clock_app/common/types/notification_type.dart';
 import 'package:clock_app/common/types/schedule_id.dart';
 import 'package:clock_app/common/utils/list_storage.dart';
@@ -39,20 +40,22 @@ Future<void> updateAlarm(int scheduleId, String description) async {
 // This is called both when an alarm triggers, as well as when the device boots
 // up, so we can check for alarms that rung when the device was off
 Future<void> updateAlarms(String description) async {
-  await cancelAllAlarms();
+  final updated = await runSafeListUpdate<Alarm>(
+    load: () => loadListResult<Alarm>("alarms"),
+    cancel: cancelAllAlarms,
+    process: (alarms) async {
+      for (final alarm in alarms) {
+        await alarm.update(description);
+        if (alarm.isMarkedForDeletion) {
+          await alarm.disable();
+        }
+      }
 
-  List<Alarm> alarms = await loadList("alarms");
-
-  for (Alarm alarm in alarms) {
-    await alarm.update(description);
-    if (alarm.isMarkedForDeletion) {
-      await alarm.disable();
-    }
-  }
-
-  alarms.removeWhere((alarm) => alarm.isMarkedForDeletion);
-
-  await saveList("alarms", alarms);
+      alarms.removeWhere((alarm) => alarm.isMarkedForDeletion);
+    },
+    save: (alarms) => saveList("alarms", alarms),
+  );
+  if (!updated) return;
 
   // Notify other isolates that are listening for alarm updates
   SendPort? sendPort = IsolateNameServer.lookupPortByName(updatePortName);

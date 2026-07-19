@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:clock_app/alarm/logic/alarm_isolate.dart';
 import 'package:clock_app/alarm/logic/schedule_alarm.dart';
+import 'package:clock_app/common/logic/safe_list_update.dart';
 import 'package:clock_app/common/types/notification_type.dart';
 import 'package:clock_app/common/types/schedule_id.dart';
 import 'package:clock_app/timer/types/timer.dart';
@@ -19,14 +20,19 @@ Future<void> cancelAllTimers() async {
 }
 
 Future<void> resetAllTimers() async {
-  await cancelAllTimers();
+  final updated = await runSafeListUpdate<ClockTimer>(
+    load: () => loadListResult<ClockTimer>("timers"),
+    cancel: cancelAllTimers,
+    process: (timers) async {
+      for (final timer in timers) {
+        await timer.reset();
+        await timer.update("resetAllTimers()");
+      }
+    },
+    save: (timers) => saveList("timers", timers),
+  );
+  if (!updated) return;
 
-  List<ClockTimer> timers = await loadList("timers");
-  for (var timer in timers) {
-    await timer.reset();
-    await timer.update("resetAllTimers()");
-  }
-  await saveList("timers", timers);
   SendPort? sendPort = IsolateNameServer.lookupPortByName(updatePortName);
   sendPort?.send("updateTimers");
 }
@@ -43,14 +49,17 @@ Future<void> updateTimer(int scheduleId, String description) async {
 }
 
 Future<void> updateTimers(String description) async {
-  await cancelAllTimers();
-
-  List<ClockTimer> timers = await loadList("timers");
-
-  for (var timer in timers) {
-    await timer.update(description);
-  }
-  await saveList("timers", timers);
+  final updated = await runSafeListUpdate<ClockTimer>(
+    load: () => loadListResult<ClockTimer>("timers"),
+    cancel: cancelAllTimers,
+    process: (timers) async {
+      for (final timer in timers) {
+        await timer.update(description);
+      }
+    },
+    save: (timers) => saveList("timers", timers),
+  );
+  if (!updated) return;
 
   SendPort? sendPort = IsolateNameServer.lookupPortByName(updatePortName);
   sendPort?.send("updateTimers");
