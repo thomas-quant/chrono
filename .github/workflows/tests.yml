@@ -11,6 +11,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    # A hung test would otherwise hold the runner for the 6h default.
+    timeout-minutes: 30
 
     steps:
     - uses: actions/checkout@v3
@@ -19,6 +21,7 @@ jobs:
         flutter-version: '3.22.2' # or, you can use 1.22
         channel: 'stable'
         cache: true
-    - run: flutter test --coverage
+    # Per-test timeout so a hang fails with the test's name instead of stalling.
+    - run: flutter test --coverage --reporter expanded --timeout 120s
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3

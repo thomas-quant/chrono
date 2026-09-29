@@ -85,7 +85,8 @@ jobs:
       # Informational: runs the storage tests (and the rest of the suite).
       - name: Test (informational)
         continue-on-error: true
-        run: flutter test
+        timeout-minutes: 20
+        run: flutter test --reporter expanded --timeout 120s
 
       # Throwaway signing material so a RELEASE build works without org secrets.
       # build.gradle reads android/key.properties (if present) + android/app/release-key.jks.
