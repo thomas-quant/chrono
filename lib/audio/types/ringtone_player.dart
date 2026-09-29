@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:clock_app/alarm/types/alarm.dart';
 import 'package:clock_app/audio/logic/ringtones.dart';
 import 'package:clock_app/audio/types/ringtone_manager.dart';
+import 'package:clock_app/audio/types/stream_volume_enforcer.dart';
 import 'package:clock_app/audio/types/volume_ramp_controller.dart';
 import 'package:clock_app/developer/logic/logger.dart';
 import 'package:clock_app/timer/types/timer.dart';
@@ -24,6 +26,18 @@ class RingtonePlayer {
   // is the ONLY ramp-stop signal — a plain setVolume() must not kill the ramp.
   static final VolumeRampController _rampController =
       VolumeRampController((volume) => activePlayer?.setVolume(volume));
+
+  // Opt-in "force max volume": raises the alarm's *system* stream (not just
+  // the player) to max while ringing and holds it there. Goes through
+  // audio_session's AudioManager bindings, which are registered in the alarm
+  // isolate's engine — a MainActivity channel would be unreachable from here.
+  static final StreamVolumeEnforcer _streamVolumeEnforcer =
+      StreamVolumeEnforcer(
+    getVolume: (stream) => AndroidAudioManager().getStreamVolume(stream),
+    getMaxVolume: (stream) => AndroidAudioManager().getStreamMaxVolume(stream),
+    setVolume: (stream, volume) => AndroidAudioManager()
+        .setStreamVolume(stream, volume, const AndroidAudioVolumeFlags(0)),
+  );
 
   static Future<void> initialize() async {
     _alarmPlayer ??= AudioPlayer(handleInterruptions: true);
@@ -57,6 +71,15 @@ class RingtonePlayer {
       contentType: AndroidAudioContentType.music,
     ));
     activePlayer = _alarmPlayer;
+
+    // Not awaited: a slow or failing platform call must never delay the ring.
+    if (alarm.shouldForceMaxVolume) {
+      unawaited(_streamVolumeEnforcer
+          .start(androidStreamForUsage(alarm.audioChannel)));
+    } else {
+      unawaited(_streamVolumeEnforcer.stop());
+    }
+
     String uri = await getRingtoneUri(alarm.ringtone);
 
     logger.t("Playing alarm with uri: $uri");
@@ -161,6 +184,8 @@ class RingtonePlayer {
 
   static Future<void> stop() async {
     _rampController.cancel();
+    // Restores the user's stream volume if it was forced. No-op otherwise.
+    unawaited(_streamVolumeEnforcer.stop());
     await activePlayer?.stop();
     final session = await AudioSession.instance;
     await session.setActive(false);

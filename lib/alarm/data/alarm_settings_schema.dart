@@ -218,6 +218,13 @@ SettingGroup alarmSettingsSchema = SettingGroup(
                 enableConditions: [
                   ValueCondition(["Rising Volume"], (value) => value == true)
                 ]),
+            SwitchSetting(
+              "force_max_volume",
+              (context) => AppLocalizations.of(context)!.forceMaxVolumeSetting,
+              false,
+              getDescription: (context) =>
+                  AppLocalizations.of(context)!.forceMaxVolumeDescription,
+            ),
             SelectSetting<AndroidAudioUsage>(
               "Audio Channel",
               (context) => AppLocalizations.of(context)!.audioChannelSetting,

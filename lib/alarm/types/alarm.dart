@@ -99,6 +99,8 @@ class Alarm extends CustomizableListItem {
           : TimeDuration.zero;
   AndroidAudioUsage get audioChannel =>
       _settings.getSetting("Audio Channel").value;
+  bool get shouldForceMaxVolume =>
+      _settings.getSetting("force_max_volume").value;
   AlarmSchedule get activeSchedule =>
       _schedules.firstWhere((schedule) => schedule.runtimeType == scheduleType);
   List<AlarmRunner> get activeAlarmRunners => activeSchedule.alarmRunners;
