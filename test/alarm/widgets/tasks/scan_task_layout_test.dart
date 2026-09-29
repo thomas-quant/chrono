@@ -318,5 +318,48 @@ void main() {
         expect(find.byType(ReaderWidget), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'emergency floor keeps counting across an inactive/resumed cycle',
+      (WidgetTester tester) async {
+        // Pulling the notification shade (or screen off/on) sends the app
+        // through inactive -> resumed. That must not restart the 120s floor,
+        // or a user who keeps doing it at 3am never gets the dismiss.
+        final settings = AlarmTask(AlarmTaskType.scan).settings;
+        settings.getSetting("Escape Hatch").setValueWithoutNotify(false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('en'),
+            home: Scaffold(
+              body: SizedBox(
+                width: 640,
+                height: 320,
+                child: ScanTask(
+                  emergencyDismissTimeout: const Duration(seconds: 10),
+                  onSolve: () {},
+                  settings: settings,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(seconds: 6));
+        expect(find.byType(ElevatedButton), findsNothing);
+
+        tester.binding
+            .handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+        await tester.pump();
+        tester.binding
+            .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+        await tester.pump();
+
+        // 11s since the task started, but only 5s since resume.
+        await tester.pump(const Duration(seconds: 5));
+        expect(find.byType(ElevatedButton), findsOneWidget);
+      },
+    );
   });
 }

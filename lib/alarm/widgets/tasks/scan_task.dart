@@ -155,8 +155,11 @@ class _ScanTaskState extends State<ScanTask> with WidgetsBindingObserver {
       },
     )..start();
 
+    // The floor measures time since the task started, not scanner uptime, so
+    // it runs regardless of pause state — otherwise every inactive/resumed
+    // cycle (notification shade, screen off/on) would restart the 120s.
+    _cameraLivenessWatchdog!.start();
     if (!_scannerPaused) {
-      _cameraLivenessWatchdog!.start();
       unawaited(_checkCameraAccess(_scannerGeneration));
     }
   }
@@ -269,7 +272,6 @@ class _ScanTaskState extends State<ScanTask> with WidgetsBindingObserver {
   /// scan here (ReaderWidget exposes no frame signal), so this time floor is the
   /// honest backstop for that case too.
   void _revealEmergencyDismissFloor() {
-    if (_scannerPaused) return;
     _escapeHatch?.fireNow();
   }
 
@@ -286,7 +288,6 @@ class _ScanTaskState extends State<ScanTask> with WidgetsBindingObserver {
   }
 
   void _pauseScanner() {
-    _cameraLivenessWatchdog?.cancel();
     if (!mounted) return;
     setState(() => _scannerPaused = true);
   }
@@ -295,7 +296,6 @@ class _ScanTaskState extends State<ScanTask> with WidgetsBindingObserver {
     if (!mounted) return;
     setState(() => _scannerPaused = false);
     if (!_cameraFailed) {
-      _cameraLivenessWatchdog?.start();
       unawaited(_checkCameraAccess(_scannerGeneration));
     }
   }
@@ -328,7 +328,6 @@ class _ScanTaskState extends State<ScanTask> with WidgetsBindingObserver {
                   Flexible(
                     fit: FlexFit.loose,
                     child: SingleChildScrollView(
-                      shrinkWrap: true,
                       child: instruction,
                     ),
                   ),
