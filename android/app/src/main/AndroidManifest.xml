@@ -86,6 +86,21 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
             />
+    <!-- Opt-in "prevent power off while ringing" (Settings > Alarm). Only
+         closes the power menu while an alarm is ringing; reads no window
+         content. The user must turn it on in Android's accessibility settings. -->
+    <service
+      android:name=".PowerGuardService"
+      android:exported="false"
+      android:label="@string/power_guard_service_label"
+      android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+      <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService" />
+      </intent-filter>
+      <meta-data
+        android:name="android.accessibilityservice"
+        android:resource="@xml/power_guard_service" />
+    </service>
     <!-- Don't delete the meta-data below.
       This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
     <meta-data

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:isolate';
 import 'dart:ui';
@@ -8,6 +9,7 @@ import 'package:clock_app/common/utils/list_storage.dart';
 import 'package:clock_app/developer/logic/logger.dart';
 import 'package:clock_app/notifications/logic/alarm_notifications.dart';
 import 'package:clock_app/system/logic/initialize_isolate.dart';
+import 'package:clock_app/system/logic/power_guard.dart';
 import 'package:clock_app/timer/types/timer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:clock_app/alarm/logic/schedule_alarm.dart';
@@ -141,6 +143,8 @@ void triggerAlarm(int scheduleId, Json params) async {
 
   RingtonePlayer.playAlarm(alarm);
   RingingManager.ringAlarm(scheduleId);
+  // Opt-in: block the power menu until this alarm is snoozed/dismissed.
+  unawaited(armPowerGuard());
 
   /*
   Ports to set the volume of the alarm. As the RingtonePlayer only.
@@ -180,6 +184,7 @@ void setVolume(double volume) {
 
 void stopAlarm(int scheduleId, AlarmStopAction action) async {
   logger.i("[stopAlarm] Stopping alarm $scheduleId with action: ${action.name}");
+  unawaited(disarmPowerGuard());
   if (action == AlarmStopAction.snooze) {
     await updateAlarmById(scheduleId, (alarm) async => await alarm.snooze());
     // await createSnoozeNotification(scheduleId);

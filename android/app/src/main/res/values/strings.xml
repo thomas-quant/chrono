@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="power_guard_service_label">Chrono: prevent power off while ringing</string>
+    <string name="power_guard_service_description">While an alarm is ringing, Chrono closes the power menu so the phone can\'t be turned off to silence it. It only reacts to the power menu opening, doesn\'t read screen content, and does nothing when no alarm is ringing. Turn on \"Prevent power off\" in Chrono\'s alarm settings to use it.</string>
+</resources>

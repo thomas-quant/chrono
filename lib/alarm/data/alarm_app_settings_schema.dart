@@ -8,6 +8,8 @@ import 'package:clock_app/notifications/widgets/notification_actions/slide_notif
 import 'package:clock_app/settings/types/setting.dart';
 import 'package:clock_app/settings/types/setting_enable_condition.dart';
 import 'package:clock_app/settings/types/setting_group.dart';
+import 'package:clock_app/system/logic/power_guard.dart';
+import 'package:clock_app/system/widgets/power_guard_dialog.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -72,6 +74,19 @@ SettingGroup alarmAppSettingsSchema = SettingGroup(
             ),
           )
         ]),
+    SwitchSetting(
+      "prevent_power_off",
+      (context) => AppLocalizations.of(context)!.preventPowerOffSetting,
+      false,
+      getDescription: (context) =>
+          AppLocalizations.of(context)!.preventPowerOffSettingDescription,
+      searchTags: ["power", "shutdown", "turn off", "accessibility"],
+      onChange: (context, value) async {
+        if (!value || await isPowerGuardServiceEnabled()) return;
+        if (!context.mounted) return;
+        await showPowerGuardDialog(context);
+      },
+    ),
     SettingGroup("Filters",
         (context) => AppLocalizations.of(context)!.filtersSettingGroup, [
     //      CustomizableListSetting<ListFilter>(
